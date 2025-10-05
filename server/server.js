@@ -374,25 +374,40 @@ io.on('connection', (socket) => {
     const game = rooms[roomId];
     if (!game) return;
 
-    const playerIndex = game.players.indexOf(socket.username);
-    if (playerIndex > -1) {
-      const wasAlive = game.gameState.players[socket.username]?.isAlive;
-      game.players.splice(playerIndex, 1);
-      delete game.gameState.players[socket.username];
-      socket.leave(roomId);
+    const username = socket.username;
+    const playerState = game.gameState.players[username];
 
-      if (game.players.length === 0) {
-        if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
-        delete rooms[roomId];
-        delete roomHosts[roomId];
-        console.log(`Room ${roomId} closed.`);
-      } else {
-        io.to(roomId).emit('playerDisconnected', { username: socket.username, gameState: game.gameState });
-        if (wasAlive && game.gameState.mode !== 'deathmatch') {
-          const result = game.checkWinCondition();
-          processGameResult(roomId, result);
-        }
+    // If player is not in this game, or was already removed, do nothing.
+    if (!playerState) return;
+
+    const wasAlive = playerState.isAlive;
+
+    // Remove player from the game state
+    const playerIndex = game.players.indexOf(username);
+    if (playerIndex > -1) {
+      game.players.splice(playerIndex, 1);
+    }
+    delete game.gameState.players[username];
+    socket.leave(roomId);
+
+    // Announce the disconnection to remaining players
+    io.to(roomId).emit('playerDisconnected', { username: username, gameState: game.gameState });
+
+    // If the room is now empty, clean it up and stop.
+    if (game.players.length === 0) {
+      if (game.gameState.bomb && game.gameState.bomb.timer) {
+        clearTimeout(game.gameState.bomb.timer);
       }
+      delete rooms[roomId];
+      delete roomHosts[roomId];
+      console.log(`Room ${roomId} closed due to all players leaving.`);
+      return;
+    }
+
+    // Check for win conditions if a living player left a team-based game
+    if (wasAlive && game.gameState.mode !== 'deathmatch') {
+      const result = game.checkWinCondition('player_left');
+      processGameResult(roomId, result);
     }
   }
 

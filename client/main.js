@@ -383,6 +383,7 @@ let _lastSentPos = 0;
 let crosshair = null;
 let fixedTargetCount = null; // 進入靶場時鎖定的靶子數量
 let currentMode = 'training'; // training | multiplayer | robot
+let myLastHealth = 100; // For damage indicator
 
 // 武器選擇狀態 - 在主選單中選擇的武器會同步到遊戲中
 let selectedWeaponConfig = {
@@ -609,9 +610,19 @@ async function connectSocket(token) {
   // 狀態更新：更新自己的血量 HUD
   socket.on('gameStateUpdate', (data) => {
     if (!myUsername) return;
-    // The server now sends only the players object to keep the payload small
     const me = data?.players?.[myUsername];
-    if (me) updateHealth(me.health);
+    if (me) {
+      if (me.health < myLastHealth) {
+        const damageIndicator = $('#damage-indicator');
+        if (damageIndicator) {
+            damageIndicator.classList.remove('flash');
+            void damageIndicator.offsetWidth; // Trigger reflow to restart animation
+            damageIndicator.classList.add('flash');
+        }
+      }
+      myLastHealth = me.health;
+      updateHealth(me.health);
+    }
   });
 
   // 計分板更新
@@ -635,6 +646,14 @@ async function connectSocket(token) {
     if (username === myUsername) {
       updateHealth(0);
       endMatch();
+    }
+    if (killer === myUsername) {
+      const killConfirm = $('#kill-confirm');
+      if (killConfirm) {
+        killConfirm.classList.remove('show');
+        void killConfirm.offsetWidth; // Trigger reflow to restart animation
+        killConfirm.classList.add('show');
+      }
     }
   });
 
@@ -730,14 +749,6 @@ function bindMenuUi() {
   $('#target-practice-settings-btn')?.addEventListener('click', () => {
     // 先進入靶場設定畫面，由使用者按「開始練習」再發送事件
     showScreen('#practice-settings-screen');
-  });
-
-  // 機器人對戰：直接要求伺服器建立機器人房間
-  $('#bot-battle-btn')?.addEventListener('click', () => {
-    if (!socket) return toast('請先登入連線');
-    socket.emit('startRobotBattle');
-    // 使用者互動中請求鎖定
-    requestPointerLock();
   });
 
   // 靶場練習：請求伺服器建立訓練房間
@@ -871,6 +882,7 @@ function startMatch() {
   show(ammoDisplay);
   show(healthDisplay);
   updateHealth(100);
+  myLastHealth = 100; // Reset health for damage indicator
 
   // 根據模式顯示/隱藏計分板
   const scoreboard = $('#scoreboard');
