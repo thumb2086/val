@@ -31,20 +31,12 @@ export default class WeaponSystem {
     this._loadingModelPath = null; // 當前載入中的模型路徑
 
     // Hands 模型管理
-    this._handsLoader = new GLTFLoader();
     this._handsObject = null; // 目前掛在相機下的手部物件
-    this._handsGltfCache = new Map();
-    this._handsLoadingPath = null;
-    // 預設手部模型路徑（可視需要抽到設定檔）
-    this._handsModelPath = 'assets/models/hands/fps_hands_rigged_by_evolvegames/scene.gltf';
-
     // 載入請求序號：避免快速切換武器時舊的載入結果覆蓋新武器
     this._loadRequestId = 0;
 
     // Debug：槍口標記
     this._debugMuzzle = { enabled: false, obj: null };
-    // Hands 顯示開關（預設關閉）
-    this.handsEnabled = false;
 
     // 視圖覆寫：客戶端緩存與首次載入
     this._vmOverrides = null;           // 伺服器返回的 overrides 對象：{ [weaponId]: { [skinIndex]: partial } }
@@ -74,13 +66,6 @@ export default class WeaponSystem {
     this.currentWeaponId = weaponId;
     this.skinIndex = skinIndex;
     this.ammoInMag = WEAPONS[weaponId].magazineSize;
-    
-    // 依設定決定是否載入手部模型
-    if (this.handsEnabled) {
-      this._ensureHandsModel().then(() => this._applyHandsTransform()).catch(() => {});
-    } else {
-      this._clearHandsModel();
-    }
     
     // 載入並掛載對應模型
     const skin = WEAPONS[weaponId].skins?.[skinIndex];
@@ -130,7 +115,6 @@ export default class WeaponSystem {
     if (usesAmmo) this.ammoInMag -= 1;
 
     // 播放音效/特效（之後接）
-    // this.audio?.play(WEAPONS[this.currentWeaponId].sound_fire);
     // this.graphics?.playMuzzleFlash();
 
     if (usesAmmo) this.ui?.updateAmmo?.(this.ammoInMag, WEAPONS[this.currentWeaponId].magazineSize);
@@ -318,211 +302,6 @@ export default class WeaponSystem {
     const rot = (Array.isArray(vm.rotation) && vm.rotation.length === 3) ? vm.rotation : defaultRot;
 
     return { scaleVec, pos, rot };
-  }
-
-  // 取得手部視圖模型參數（可被每把武器的 viewHands 覆寫）
-  _getHandsParams() {
-    const weapon = WEAPONS[this.currentWeaponId] || {};
-    const vm = weapon.viewHands || {};
-    // 调整手部模型的默认位置和旋转，使其更自然
-    const defaultScale = 0.15;
-    const defaultPos = [0.5, -0.7, -1.0];
-    const defaultRot = [-0.1, Math.PI, 0.05];
-
-    let scaleVec;
-    if (Array.isArray(vm.scale) && vm.scale.length === 3) {
-      scaleVec = new THREE.Vector3(vm.scale[0], vm.scale[1], vm.scale[2]);
-    } else {
-      const s = typeof vm.scale === 'number' ? vm.scale : defaultScale;
-      scaleVec = new THREE.Vector3(s, s, s);
-    }
-    
-    // 确保位置和旋转数组有效
-    const pos = (Array.isArray(vm.position) && vm.position.length === 3) ? 
-      [...vm.position] : [...defaultPos];
-    const rot = (Array.isArray(vm.rotation) && vm.rotation.length === 3) ? 
-      [...vm.rotation] : [...defaultRot];
-      
-    // 确保手部模型不会穿模
-    if (weapon.type === 'melee') {
-      // 近战武器时手部位置微调
-      pos[0] = pos[0] ?? 0.5;
-      pos[1] = pos[1] ?? -0.6;
-      pos[2] = pos[2] ?? -0.9;
-    }
-    return { scaleVec, pos, rot };
-  }
-
-  async _ensureHandsModel() {
-    if (!this.handsEnabled) return;
-    if (!this.graphics?.getCamera) return;
-    const cam = this.graphics.getCamera();
-    if (!cam) return;
-    if (this._handsObject) return; // 已載入
-
-    const modelPath = this._handsModelPath;
-    if (!modelPath) return;
-
-    if (this._handsLoadingPath === modelPath) return;
-    this._handsLoadingPath = modelPath;
-
-    // 與武器相同的路徑修正策略
-    const needsFix = modelPath?.startsWith('assets/models/');
-    const localManager = needsFix ? new THREE.LoadingManager() : null;
-    if (localManager && needsFix) {
-      localManager.setURLModifier((url) => {
-        if (!url) return url;
-        if (url.startsWith('data:')) return url;
-        if (url.startsWith('blob:')) return url;
-        if (url.startsWith('http')) return url;
-        if (url === modelPath || /(\.gltf|\.glb)(\?.*)?$/i.test(url)) return url;
-        let fixedUrl = url;
-        if (fixedUrl.includes('textures/')) fixedUrl = fixedUrl.replace(/.*textures\//, '');
-        const hasExt = /\.[a-z0-9]{2,5}(\?.*)?$/i.test(fixedUrl);
-        if (!hasExt) fixedUrl += '.png';
-        const modelDir = modelPath.substring(0, modelPath.lastIndexOf('/') + 1);
-        if (!fixedUrl.startsWith(modelDir)) fixedUrl = modelDir + fixedUrl;
-        console.log('[WeaponSystem][Hands] URL修正:', url, '->', fixedUrl);
-        return fixedUrl;
-      });
-    }
-    const loader = localManager ? new GLTFLoader(localManager) : this._handsLoader;
-
-    try {
-      // 快取
-      if (this._handsGltfCache.has(modelPath)) {
-        const cached = this._handsGltfCache.get(modelPath);
-        const src = cached.scene || cached.scenes?.[0];
-        if (src) {
-          const obj = src.clone(true);
-          obj.traverse(n => {
-            if (n.isMesh) {
-              n.castShadow = false;
-              n.receiveShadow = false;
-              n.frustumCulled = false;
-              n.renderOrder = 998; // 先於場景、略低於武器
-              const mats = Array.isArray(n.material) ? n.material : [n.material];
-              mats.forEach(m => { if (m) { m.depthTest = false; m.depthWrite = false; m.side = THREE.DoubleSide; } });
-            }
-          });
-
-          const box = new THREE.Box3().setFromObject(obj);
-          const center = box.getCenter(new THREE.Vector3());
-          const group = new THREE.Group();
-          group.add(obj);
-          obj.position.sub(center);
-          group.userData.isHands = true;
-          group.matrixAutoUpdate = true;
-          group.frustumCulled = false;
-
-          // 套用手部視圖參數
-          const { scaleVec, pos, rot } = this._getHandsParams();
-          group.scale.set(scaleVec.x, scaleVec.y, scaleVec.z);
-          group.position.set(pos[0], pos[1], pos[2]);
-          group.rotation.set(rot[0], rot[1], rot[2]);
-
-          cam.add(group);
-          this._handsObject = group;
-          cam.updateMatrixWorld(true);
-          group.updateMatrixWorld(true);
-          console.log('[WeaponSystem] Hands attached to camera:', {
-            camUUID: cam.uuid,
-            parentUUID: group.parent?.uuid,
-            isParentCamera: group.parent === cam
-          });
-          console.log('[WeaponSystem] 手部模型已從快取掛載');
-          return;
-        }
-      }
-
-      const gltf = await new Promise((resolve, reject) => loader.load(modelPath, resolve, undefined, reject));
-      try { this._handsGltfCache.set(modelPath, gltf); } catch {}
-      const obj = gltf.scene || gltf.scenes?.[0];
-      if (!obj) { this._handsLoadingPath = null; return; }
-
-      obj.traverse(n => {
-        if (n.isMesh) {
-          n.castShadow = false;
-          n.receiveShadow = false;
-          n.frustumCulled = false;
-          n.renderOrder = 998;
-          const mats = Array.isArray(n.material) ? n.material : [n.material];
-          mats.forEach(m => { if (m) { m.depthTest = false; m.depthWrite = false; m.side = THREE.DoubleSide; } });
-        }
-      });
-
-      const box = new THREE.Box3().setFromObject(obj);
-      const center = box.getCenter(new THREE.Vector3());
-      const group = new THREE.Group();
-      group.add(obj);
-      obj.position.sub(center);
-      group.userData.isHands = true;
-      group.matrixAutoUpdate = true;
-      group.frustumCulled = false;
-
-      const { scaleVec, pos, rot } = this._getHandsParams();
-      // 确保缩放值合理
-      const safeScaleX = Math.max(0.001, Math.min(10, Math.abs(scaleVec.x))) * Math.sign(scaleVec.x || 1);
-      const safeScaleY = Math.max(0.001, Math.min(10, Math.abs(scaleVec.y))) * Math.sign(scaleVec.y || 1);
-      const safeScaleZ = Math.max(0.001, Math.min(10, Math.abs(scaleVec.z))) * Math.sign(scaleVec.z || 1);
-      
-      // 确保位置在合理范围内
-      const safePosX = Math.max(-2, Math.min(2, pos[0] || 0));
-      const safePosY = Math.max(-2, Math.min(2, pos[1] || 0));
-      const safePosZ = Math.max(-5, Math.min(0, pos[2] || 0));
-      
-      // 确保旋转在合理范围内
-      const safeRotX = Math.max(-Math.PI, Math.min(Math.PI, rot[0] || 0));
-      const safeRotY = Math.max(-Math.PI, Math.min(Math.PI, rot[1] || 0));
-      const safeRotZ = Math.max(-Math.PI, Math.min(Math.PI, rot[2] || 0));
-      
-      // 应用安全值
-      group.scale.set(safeScaleX, safeScaleY, safeScaleZ);
-      group.position.set(safePosX, safePosY, safePosZ);
-      group.rotation.set(safeRotX, safeRotY, safeRotZ);
-
-      cam.add(group);
-      this._handsObject = group;
-      try {
-        cam.updateMatrixWorld(true);
-        group.updateMatrixWorld(true);
-        console.log('[WeaponSystem] Hands attached to camera:', {
-          camUUID: cam.uuid,
-          parentUUID: group.parent?.uuid,
-          isParentCamera: group.parent === cam
-        });
-      } catch {}
-      this._handsLoadingPath = null;
-      console.log('[WeaponSystem] 手部模型已掛載到相機');
-    } catch (e) {
-      console.error('[WeaponSystem] 手部模型載入失敗:', modelPath, e);
-      this._handsLoadingPath = null;
-    }
-  }
-
-  _applyHandsTransform() {
-    if (!this._handsObject) return;
-    const { scaleVec, pos, rot } = this._getHandsParams();
-    
-    // 确保缩放值合理
-    const safeScaleX = Math.max(0.001, Math.min(10, Math.abs(scaleVec.x))) * Math.sign(scaleVec.x || 1);
-    const safeScaleY = Math.max(0.001, Math.min(10, Math.abs(scaleVec.y))) * Math.sign(scaleVec.y || 1);
-    const safeScaleZ = Math.max(0.001, Math.min(10, Math.abs(scaleVec.z))) * Math.sign(scaleVec.z || 1);
-    
-    // 确保位置在合理范围内
-    const safePosX = Math.max(-2, Math.min(2, pos[0] || 0));
-    const safePosY = Math.max(-2, Math.min(2, pos[1] || 0));
-    const safePosZ = Math.max(-5, Math.min(0, pos[2] || 0));
-    
-    // 确保旋转在合理范围内
-    const safeRotX = Math.max(-Math.PI, Math.min(Math.PI, rot[0] || 0));
-    const safeRotY = Math.max(-Math.PI, Math.min(Math.PI, rot[1] || 0));
-    const safeRotZ = Math.max(-Math.PI, Math.min(Math.PI, rot[2] || 0));
-    
-    // 应用安全值
-    this._handsObject.scale.set(safeScaleX, safeScaleY, safeScaleZ);
-    this._handsObject.position.set(safePosX, safePosY, safePosZ);
-    this._handsObject.rotation.set(safeRotX, safeRotY, safeRotZ);
   }
 
   // ===== 視圖覆寫：伺服器 API 與緩存 =====
@@ -1107,40 +886,6 @@ export default class WeaponSystem {
       } catch (_) {}
     }
 
-    // 校正手部
-    const h = this._handsObject;
-    if (!this.handsEnabled) {
-      if (h) {
-        try { h.parent && h.parent.remove(h); } catch {}
-        this._handsObject = null;
-      }
-    } else if (h) {
-      if (h.parent !== cam) {
-        try {
-          // 先從舊父節點移除
-          if (h.parent) {
-            h.parent.remove(h);
-          }
-          cam.add(h);
-          console.log('[WeaponSystem] 偵測到手部脫離，已重新掛載到相機');
-        } catch (_) {}
-      }
-      try {
-        h.frustumCulled = false;
-        h.matrixAutoUpdate = true;
-        h.updateMatrixWorld(true);
-        
-        h.traverse(n => {
-          if (n.isMesh) {
-            n.frustumCulled = false;
-            n.matrixAutoUpdate = true;
-            const mats = Array.isArray(n.material) ? n.material : [n.material];
-            mats.forEach(m => { if (m) { m.depthTest = false; m.depthWrite = false; } });
-          }
-        });
-      } catch (_) {}
-    }
-
     // Debug：更新槍口標記位置
     try {
       if (this._debugMuzzle?.enabled) {
@@ -1170,67 +915,4 @@ export default class WeaponSystem {
     } catch (_) {}
   }
 
-  // 開關：槍口 debug 標記
-  setMuzzleDebug(enabled) {
-    this._debugMuzzle = this._debugMuzzle || { enabled: false, obj: null };
-    this._debugMuzzle.enabled = !!enabled;
-    if (!enabled && this._debugMuzzle.obj) {
-      try {
-        this._debugMuzzle.obj.visible = false;
-      } catch {}
-    }
-  }
-
-  // 切換手部模型顯示
-  setHandsEnabled(enabled) {
-    const next = !!enabled;
-    if (this.handsEnabled === next) return;
-    this.handsEnabled = next;
-    if (next) {
-      try {
-        const p = this._ensureHandsModel();
-        if (p && typeof p.then === 'function') {
-          p.then(() => this._applyHandsTransform()).catch(() => {});
-        } else {
-          this._applyHandsTransform();
-        }
-      } catch (_) {}
-    } else {
-      this._clearHandsModel();
-    }
-  }
-
-  // 安全移除相機/場景中的手部模型
-  _clearHandsModel() {
-    try {
-      const cam = this.graphics?.getCamera?.();
-      if (cam) {
-        const toRemove = [];
-        cam.children?.forEach(ch => { if (ch?.userData?.isHands) toRemove.push(ch); });
-        toRemove.forEach(ch => cam.remove(ch));
-        if (toRemove.length) console.log('[WeaponSystem] 從相機移除殘留手部數量:', toRemove.length);
-      }
-    } catch {}
-    try {
-      const scene = this.graphics?.scene;
-      if (scene) {
-        const toRemoveScene = [];
-        scene.children?.forEach(ch => { if (ch?.userData?.isHands) toRemoveScene.push(ch); });
-        toRemoveScene.forEach(ch => scene.remove(ch));
-        if (toRemoveScene.length) console.log('[WeaponSystem] 從場景移除殘留手部數量:', toRemoveScene.length);
-      }
-    } catch {}
-    if (this._handsObject) {
-      try {
-        const obj = this._handsObject;
-        this._handsObject = null;
-        obj.parent && obj.parent.remove(obj);
-      } catch {}
-    }
-    this._handsLoadingPath = null;
-  }
-
-  isMuzzleDebugEnabled() {
-    return !!(this._debugMuzzle && this._debugMuzzle.enabled);
-  }
 }
