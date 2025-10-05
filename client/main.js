@@ -335,22 +335,24 @@ function bindDevModeToggle() {
     applyDevModeToUi(enabled);
   });
 }
-function show(el) { if (el) el.style.display = ''; }
-function hide(el) { if (el) el.style.display = 'none'; }
+function show(el) { if (el) el.classList.remove('hidden'); }
+function hide(el) { if (el) el.classList.add('hidden'); }
 function showScreen(screenId) {
-  // 使用 active 類別控制顯示（對應 style.css: .menu-screen.active { display: flex; }）
+  // Hide all other screens by removing the 'active' class
   document.querySelectorAll('.menu-screen').forEach(div => {
     div.classList.remove('active');
-    div.style.display = 'none';
   });
+
+  // Show the target screen by adding the 'active' class
   const target = $(screenId);
   if (target) {
     target.classList.add('active');
-    target.style.display = 'flex';
     console.log('[UI] showScreen ->', screenId);
-    // 應用開發者模式顯示狀態
+
+    // Apply developer mode UI state
     applyDevModeToUi(readDevMode());
-    // 顯示暫停畫面時，刷新滑桿顯示為當前武器/皮膚的視圖參數
+
+    // Special logic for specific screens
     if (screenId === '#pause-screen') {
       populateSettingsVmSliders();
     }
@@ -358,11 +360,11 @@ function showScreen(screenId) {
     console.warn('[UI] showScreen target not found:', screenId);
   }
 }
-// 隱藏所有選單畫面（進入遊戲時保險隱藏疊在上層的 UI）
+
+// Hides all menu screens
 function hideAllScreens() {
   document.querySelectorAll('.menu-screen').forEach(div => {
     div.classList.remove('active');
-    div.style.display = 'none';
   });
 }
 function toast(msg) { console.log(msg); alert(msg); }
@@ -1215,6 +1217,6 @@ function loop(now) {
     console.error('[UNHANDLED REJECTION]', e?.reason || e);
   });
 
-  // 每次載入都要求重新登入，不做自動登入
+  // Start by showing the authentication screen
   showScreen('#auth-screen');
 })();

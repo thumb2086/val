@@ -37,6 +37,7 @@ body {
   background-color: rgba(17, 17, 17, 0.9);
   display: none; /* Hidden by default, controlled by JS */
   justify-content: center;
+  z-index: 100; /* Ensure menus are above the game canvas */
   align-items: center;
   backdrop-filter: blur(5px);
 }
