@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>特戰英豪原型</title>
+    <link rel="stylesheet" href="/style.css">
+    <!-- Google Fonts & Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    
+</head>
+<body>
+    <script>
+      // 確認瀏覽器主控台可用與 DOM 已解析
+      console.log('[HTML] DOM parsing...');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('[HTML] DOMContentLoaded');
+      });
+    </script>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="menu-screen active">
+        <div class="menu-content">
+            <div class="auth-tabs">
+                <button id="login-tab" class="auth-tab active">登入</button>
+                <button id="register-tab" class="auth-tab">註冊</button>
+            </div>
+            <div id="login-form" style="display: block;">
+                <h2>登入</h2>
+                <input type="text" id="login-username" placeholder="使用者名稱" class="auth-input">
+                <input type="password" id="login-password" placeholder="密碼" class="auth-input">
+                <button id="login-btn" class="btn btn-primary">登入</button>
+            </div>
+            <div id="register-form" style="display: none;">
+                <h2>註冊</h2>
+                <input type="text" id="register-username" placeholder="使用者名稱" class="auth-input">
+                <input type="password" id="register-password" placeholder="密碼" class="auth-input">
+                <button id="register-btn" class="btn btn-primary">註冊</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Menu Screen -->
+    <div id="main-menu-screen" class="menu-screen">
+        <div class="menu-content">
+            <h1>特戰英豪原型</h1>
+            <div class="main-menu-grid">
+                <button id="target-practice-settings-btn" class="btn btn-primary"><i class="fa-solid fa-crosshairs"></i>靶場練習</button>
+                <button id="bot-battle-btn" class="btn btn-primary"><i class="fa-solid fa-robot"></i>機器人對戰</button>
+                <button id="multiplayer-btn" class="btn btn-primary"><i class="fa-solid fa-users"></i>多人對戰</button>
+                <button id="weapon-skins-btn" class="btn btn-primary"><i class="fa-solid fa-paintbrush"></i>武器塗裝</button>
+                <button id="settings-btn" class="btn btn-primary"><i class="fa-solid fa-gear"></i>設置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multiplayer Screen -->
+    <div id="multiplayer-screen" class="menu-screen">
+        <div class="menu-content">
+            <h2>多人對戰</h2>
+            <div id="room-info" class="room-info-container" style="display: none;">
+                <p>房間號碼: <span id="room-id-display"></span></p>
+                <p>房主: <span id="room-host-display"></span></p>
+                <div>
+                    <h3 style="margin: 0.5rem 0;">玩家列表</h3>
+                    <ul id="player-list" style="list-style:none; padding-left:0; margin:0 0 0.5rem 0;"></ul>
+                </div>
+                <div class="multiplayer-buttons" style="display:flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem;">
+                    <button id="start-game-btn" class="btn btn-primary" style="display: block;">開始遊戲</button>
+                    <button id="switch-team-btn" class="btn btn-secondary" style="display: block;">切換隊伍</button>
+                    <button id="leave-room-btn" class="btn btn-secondary" style="display: block;">退出房間</button>
+                </div>
+            </div>
+            <div id="join-create-room-section" style="display: block;">
+                <div class="game-mode-selection">
+                    <h3>遊戲模式</h3>
+                    <div class="radio-group">
+                        <label style="display: block; margin: 0.5rem 0;">
+                            <input type="radio" name="gameMode" value="deathmatch" checked> 死鬥 (Deathmatch)
+                        </label>
+                        <label style="display: block; margin: 0.5rem 0;">
+                            <input type="radio" name="gameMode" value="5v5"> 5v5 拆彈 (Bomb Defusal)
+                        </label>
+                    </div>
+                    <div id="kill-limit-setting" class="setting-item" style="margin: 1rem 0;">
+                        <label for="kill-limit-input" style="display: block; margin-bottom: 0.5rem;">擊殺限制:</label>
+                        <input type="number" id="kill-limit-input" value="40" min="1" max="100" class="auth-input">
+                    </div>
+                </div>
+                <div class="room-actions" style="margin-top: 1rem;">
+                    <button id="create-room-btn" class="btn btn-primary" style="display: block; width: 100%; margin-bottom: 1rem;">創建房間</button>
+                    <hr class="divider" style="margin: 1rem 0;">
+                    <input type="text" id="room-id-input" placeholder="輸入房間號碼" class="auth-input" style="margin-bottom: 1rem;">
+                    <button id="join-room-btn" class="btn btn-primary" style="display: block; width: 100%;">加入房間</button>
+                </div>
+            </div>
+            <button id="back-to-main-multiplayer" class="btn btn-secondary" style="display: block; margin-top: 2rem;">返回主選單</button>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="menu-screen">
+        <div class="menu-content">
+            <h2>設置</h2>
+            <div class="setting-item">
+                <label for="sensitivity-slider" style="display: block; margin-bottom: 0.5rem;">
+                    滑鼠靈敏度: <span id="sensitivity-value">1.0</span>
+                </label>
+                <input type="range" id="sensitivity-slider" min="0.1" max="3" step="0.1" value="1.0" style="width: 100%;">
+            </div>
+            <!-- Developer Option Toggle -->
+            <div class="setting-item">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="dev-mode-toggle">
+                    開發者選項：顯示進階視圖調節（含槍口偏移）
+                </label>
+                <small style="color:#9ad;">預設隱藏進階調參；啟用後顯示旋轉與槍口偏移等細節控制。</small>
+            </div>
+            
+            <button id="close-settings" class="btn btn-secondary">關閉</button>
+        </div>
+    </div>
+
+    <!-- Weapon Skins Screen -->
+    <div id="weapon-skins-screen" class="menu-screen">
+        <div class="menu-content">
+            <h2>武器塗裝</h2>
+            <div id="weapon-skins-list"></div>
+            <button id="open-tuner" class="btn btn-primary" style="margin-top: 10px;">調整當前視圖</button>
+            <button id="close-skins" class="btn btn-secondary" style="margin-top: 20px;">關閉</button>
+        </div>
+    </div>
+
+    <!-- View Model Tuner Screen -->
+    <div id="weapon-tuner-screen" class="menu-screen" style="display: none;">
+        <div class="menu-content">
+            <h2>視圖參數調節</h2>
+            <p style="color:#9ad; margin-top:0;">針對「當前選擇的武器與皮膚」個別調整，並自動保存（localStorage）。</p>
+            <div class="setting-item">
+                <h3 style="margin:0.5rem 0;">Scale（比例）</h3>
+                <label style="display:block; margin: 0.25rem 0;">等比縮放（單一數值）：<input id="vm-scale" type="number" step="0.001" placeholder="例如 0.08"></label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <label>Scale X: <input id="vm-scale-x" type="number" step="0.001" style="width:120px;"></label>
+                    <label>Scale Y: <input id="vm-scale-y" type="number" step="0.001" style="width:120px;"></label>
+                    <label>Scale Z: <input id="vm-scale-z" type="number" step="0.001" style="width:120px;"></label>
+                </div>
+                <small style="color:#aaa;">若填了等比縮放則忽略 X/Y/Z；否則使用每軸縮放。</small>
+            </div>
+
+            <div class="setting-item">
+                <h3 style="margin:0.5rem 0;">Position（位置）</h3>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <label>X: <input id="vm-pos-x" type="number" step="0.01" style="width:120px;"></label>
+                    <label>Y: <input id="vm-pos-y" type="number" step="0.01" style="width:120px;"></label>
+                    <label>Z: <input id="vm-pos-z" type="number" step="0.01" style="width:120px;"></label>
+                </div>
+            </div>
+
+            <div class="setting-item dev-advanced" hidden>
+                <h3 style="margin:0.5rem 0;">Rotation（旋轉，度）</h3>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <label>Pitch X°: <input id="vm-rot-x" type="number" step="0.1" style="width:120px;"></label>
+                    <label>Yaw Y°: <input id="vm-rot-y" type="number" step="0.1" style="width:120px;"></label>
+                    <label>Roll Z°: <input id="vm-rot-z" type="number" step="0.1" style="width:120px;"></label>
+                </div>
+                <small style="color:#aaa;">UI 使用度數，儲存時會自動轉為弧度。</small>
+            </div>
+
+            <div class="setting-item dev-advanced" hidden>
+                <h3 style="margin:0.5rem 0;">Muzzle Offset（槍口偏移）</h3>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <label>X: <input id="vm-muz-x" type="number" step="0.01" style="width:120px;"></label>
+                    <label>Y: <input id="vm-muz-y" type="number" step="0.01" style="width:120px;"></label>
+                    <label>Z: <input id="vm-muz-z" type="number" step="0.01" style="width:120px;"></label>
+                </div>
+                <small style="color:#aaa;">以武器群組本地座標，會乘上 Scale 轉為世界座標。</small>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top: 1rem;">
+                <button id="vm-save" class="btn btn-primary">保存並套用</button>
+                <button id="vm-clear" class="btn btn-secondary">清除此皮膚覆寫</button>
+                <button id="vm-back" class="btn btn-secondary">返回塗裝</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Practice Range Settings Screen -->
+    <div id="practice-settings-screen" class="menu-screen">
+        <div class="menu-content">
+            <h2>靶場設置</h2>
+            <div class="setting-item">
+                <label for="target-count-input">靶子數量:</label>
+                <input type="number" id="target-count-input" value="10" min="1" max="100">
+            </div>
+            <button id="start-practice-btn" class="btn btn-primary">開始練習</button>
+            <button id="back-to-main-from-practice-settings" class="btn btn-secondary">返回主選單</button>
+        </div>
+    </div>
+    
+    <!-- Pause Menu -->
+    <div id="pause-screen" class="menu-screen">
+        <div class="menu-content">
+            <h2>已暫停</h2>
+            <!-- Weapon View Model Quick Tuning (moved here) -->
+            <div class="setting-item" style="margin: 0.75rem 0 1rem;">
+                <h3 style="margin:0.5rem 0;">武器視圖快速調整</h3>
+                <small style="color:#9ad; display:block; margin-bottom:0.5rem;">作用於「目前選擇的武器與皮膚」，會保存到本機並即時套用。</small>
+
+                <!-- Scale (uniform) -->
+                <label for="settings-vm-scale-range" style="display:block; margin: 0.25rem 0;">
+                    比例 Scale: <span id="settings-vm-scale-value">0.15</span>
+                </label>
+                <input type="range" id="settings-vm-scale-range" min="0.01" max="5" step="0.005" value="0.15" style="width:100%;">
+
+                <!-- Position XYZ -->
+                <div style="display:grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top:0.75rem;">
+                    <div>
+                        <label for="settings-vm-pos-x" style="display:block;">位置 X: <span id="settings-vm-pos-x-value">0.60</span></label>
+                        <input type="range" id="settings-vm-pos-x" min="-2" max="2" step="0.01" value="0.6" style="width:100%;">
+                    </div>
+                    <div>
+                        <label for="settings-vm-pos-y" style="display:block;">位置 Y: <span id="settings-vm-pos-y-value">-0.50</span></label>
+                        <input type="range" id="settings-vm-pos-y" min="-2" max="2" step="0.01" value="-0.5" style="width:100%;">
+                    </div>
+                    <div>
+                        <label for="settings-vm-pos-z" style="display:block;">位置 Z: <span id="settings-vm-pos-z-value">-1.00</span></label>
+                        <input type="range" id="settings-vm-pos-z" min="-5" max="0" step="0.01" value="-1.0" style="width:100%;">
+                    </div>
+                </div>
+
+                <!-- Rotation (deg) -->
+                <div class="dev-advanced" hidden style="grid-template-columns: 1fr; gap: 0.5rem; margin-top:0.75rem;">
+                  <div>
+                    <label for="settings-vm-rot-x" style="display:block;">旋轉 Pitch X°: <span id="settings-vm-rot-x-value">-5.00</span></label>
+                    <input type="range" id="settings-vm-rot-x" min="-180" max="180" step="0.1" value="-5" style="width:100%;">
+                  </div>
+                  <div>
+                    <label for="settings-vm-rot-y" style="display:block;">旋轉 Yaw Y°: <span id="settings-vm-rot-y-value">180.00</span></label>
+                    <input type="range" id="settings-vm-rot-y" min="-180" max="180" step="0.1" value="180" style="width:100%;">
+                  </div>
+                  <div>
+                    <label for="settings-vm-rot-z" style="display:block;">旋轉 Roll Z°: <span id="settings-vm-rot-z-value">5.00</span></label>
+                    <input type="range" id="settings-vm-rot-z" min="-180" max="180" step="0.1" value="5" style="width:100%;">
+                  </div>
+                </div>
+
+                <!-- Muzzle Offset XYZ -->
+                <div class="dev-advanced" hidden style="grid-template-columns: 1fr; gap: 0.5rem; margin-top:0.75rem;">
+                  <div>
+                    <label for="settings-vm-muz-x" style="display:block;">槍口偏移 X: <span id="settings-vm-muz-x-value">0.00</span></label>
+                    <input type="range" id="settings-vm-muz-x" min="-25" max="25" step="0.01" value="0" style="width:100%;">
+                  </div>
+                  <div>
+                    <label for="settings-vm-muz-y" style="display:block;">槍口偏移 Y: <span id="settings-vm-muz-y-value">0.00</span></label>
+                    <input type="range" id="settings-vm-muz-y" min="-25" max="25" step="0.01" value="0" style="width:100%;">
+                  </div>
+                  <div>
+                    <label for="settings-vm-muz-z" style="display:block;">槍口偏移 Z: <span id="settings-vm-muz-z-value">0.00</span></label>
+                    <input type="range" id="settings-vm-muz-z" min="-25" max="25" step="0.01" value="0" style="width:100%;">
+                  </div>
+                </div>
+
+                <!-- Screen Muzzle (螢幕座標與深度) -->
+                <div class="dev-advanced" hidden style="grid-template-columns: 1fr; gap: 0.5rem; margin-top:0.75rem;">
+                  <h4 style="margin:0.25rem 0;">Screen Muzzle（螢幕座標與深度）</h4>
+                  <small style="color:#9ad; display:block; margin-bottom:0.25rem;">muzzleSpace='screen' 時生效。X/Y 為 NDC（-1 ~ 1），Depth 沿視線前推距離（公尺）。</small>
+                  <div>
+                    <label for="settings-vm-muz-screen-x" style="display:block;">Screen X (NDC): <span id="settings-vm-muz-screen-x-value">0.000</span></label>
+                    <input type="range" id="settings-vm-muz-screen-x" min="-1" max="1" step="0.001" value="0" style="width:100%;">
+                  </div>
+                  <div>
+                    <label for="settings-vm-muz-screen-y" style="display:block;">Screen Y (NDC): <span id="settings-vm-muz-screen-y-value">0.000</span></label>
+                    <input type="range" id="settings-vm-muz-screen-y" min="-1" max="1" step="0.001" value="0" style="width:100%;">
+                  </div>
+                  <div>
+                    <label for="settings-vm-muz-depth" style="display:block;">Depth: <span id="settings-vm-muz-depth-value">0.25</span></label>
+                    <input type="range" id="settings-vm-muz-depth" min="0.02" max="3" step="0.01" value="0.25" style="width:100%;">
+                  </div>
+                </div>
+            </div>
+            <button id="resume-game" class="btn btn-primary">繼續遊戲</button>
+            <button id="pause-settings" class="btn btn-primary">設置</button>
+            <button id="back-to-main-pause" class="btn btn-secondary">回到主選單</button>
+        </div>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair">
+        <div class="crosshair-line" id="crosshair-top"></div>
+        <div class="crosshair-line" id="crosshair-bottom"></div>
+        <div class="crosshair-line" id="crosshair-left"></div>
+        <div class="crosshair-line" id="crosshair-right"></div>
+    </div>
+
+    <!-- Game Stats Overlay -->
+    <div id="game-stats-overlay" style="display: none; position: absolute; top: 10px; left: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 1.2rem; text-shadow: 1px 1px 2px black; z-index: 100;">
+        <div id="kill-feed"></div>
+        <div id="player-kills"></div>
+    </div>
+
+    <!-- Health Display -->
+    <div id="health-display" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(255, 0, 0, 0.7); width: 200px; height: 20px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.5); z-index: 100;">
+        <div id="health-bar" style="width: 100%; height: 100%; background-color: #00ff00; transition: width 0.2s ease-out;"></div>
+        <div id="health-text" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; text-shadow: 1px 1px 2px black;">100</div>
+    </div>
+
+    <!-- Ammo Display -->
+    <div id="ammo-display" style="display: none; position: absolute; bottom: 50px; right: 20px; color: white; font-family: 'Inter', sans-serif; font-size: 1.5rem; text-shadow: 1px 1px 2px black; z-index: 100;">
+        <span id="ammo-text">30 / 60</span>
+    </div>
+
+    <!-- Load app bundle (includes socket.io-client) -->
+    <script src="/bundle.js" defer></script>
+</body>
+</html>

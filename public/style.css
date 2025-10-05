@@ -1,0 +1,461 @@
+:root {
+    --background-color: #101822;
+    --surface-color: #1a2430;
+    --primary-accent-color: #ff4655; /* Valorant Red */
+    --primary-accent-hover: #e03c4a;
+    --text-color: #ece8e1;
+    --text-color-muted: #a0a7b0;
+    --border-color: #2a3440;
+    --input-background: #0a0f15;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- Screen Management --- */
+.menu-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: radial-gradient(circle at center, rgba(16, 24, 34, 0.9) 0%, rgba(16, 24, 34, 0.95) 100%);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.4s ease-in-out;
+    z-index: 1000; /* Ensure it's on top of everything */
+}
+
+.menu-screen.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* --- Card Layout for Menus --- */
+.menu-content {
+    background-color: var(--surface-color);
+    padding: 2rem 2.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 2rem;
+    color: var(--primary-accent-color);
+    text-shadow: 0 0 10px rgba(255, 70, 85, 0.5);
+}
+
+h2 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+/* --- Auth Screen Specifics --- */
+.auth-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: color 0.2s, border-bottom-color 0.2s;
+    border-bottom: 2px solid transparent;
+    transform: translateY(2px);
+}
+
+.auth-tab.active {
+    color: var(--primary-accent-color);
+    border-bottom-color: var(--primary-accent-color);
+}
+
+.auth-input {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 1rem;
+    background-color: var(--input-background);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: var(--primary-accent-color);
+    box-shadow: 0 0 0 3px rgba(255, 70, 85, 0.3);
+}
+
+/* --- Button Styles --- */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    margin: 0.5rem 0;
+    border: 2px solid var(--primary-accent-color);
+    color: var(--text-color);
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    transition: background-color 0.2s, transform 0.1s, color 0.2s;
+    box-sizing: border-box;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn i {
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-accent-color);
+    color: var(--background-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-accent-hover);
+    border-color: var(--primary-accent-hover);
+    transform: translateY(-3px);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text-color-muted);
+    border: none;
+    margin-top: 1rem;
+    text-transform: none;
+}
+
+.btn-secondary:hover {
+    color: var(--text-color);
+    text-decoration: underline;
+}
+
+/* Skin button specific */
+.skin-btn {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    text-transform: none;
+}
+.skin-btn:hover {
+    background-color: var(--border-color);
+    border-color: var(--border-color);
+}
+
+/* Weapon Skins Screen specific styles */
+#weapon-skins-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+    max-height: 400px; /* Limit height for scrolling */
+    overflow-y: auto; /* Enable vertical scrolling */
+    padding-right: 10px; /* Space for scrollbar */
+}
+
+.weapon-skin-item {
+    background-color: var(--surface-color);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-align: left;
+}
+
+.weapon-skin-item:hover {
+    border-color: var(--primary-accent-color);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.weapon-skin-item.active {
+    border-color: var(--primary-accent-color);
+    box-shadow: 0 0 15px var(--primary-accent-color);
+    background-color: rgba(255, 70, 85, 0.1); /* Subtle highlight */
+}
+
+.weapon-skin-item h3 {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.weapon-skin-item p {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+}
+
+#weapon-skins-screen h2,
+#weapon-skins-screen h3 {
+    color: var(--text-color); /* Use theme text color for headings */
+}
+
+#weapon-skins-screen .btn {
+    /* Ensure button text is visible against potentially dark backgrounds */
+    color: var(--text-color); /* Use theme text color for buttons */
+}
+
+/* Override specific button types if needed, but ensure text color */
+#weapon-skins-screen .btn-primary {
+    background-color: var(--primary-accent-color); /* Keep original background */
+    color: var(--background-color); /* Force dark text for contrast */
+}
+
+#weapon-skins-screen .btn-secondary {
+    background: transparent;
+    border: 2px solid var(--border-color); /* Use theme border color */
+    color: var(--text-color); /* Use theme text color */
+}
+
+#weapon-skins-screen .btn-secondary:hover {
+    color: var(--primary-accent-color); /* Highlight on hover */
+    text-decoration: underline;
+}
+
+
+/* --- Main Menu Grid --- */
+#main-menu-screen .menu-content {
+    max-width: 700px;
+}
+
+.main-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+/* --- Multiplayer Lobby --- */
+.room-info-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--input-background);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 1.1rem;
+}
+
+#room-id-display {
+    font-weight: 700;
+    color: var(--primary-accent-color);
+    user-select: all;
+    background: #000;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.divider {
+    border: 0;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 2rem 0;
+}
+
+/* Game Mode Selection */
+.game-mode-selection {
+    background-color: var(--input-background);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.game-mode-selection h3 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem; /* Adjusted margin */
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.radio-group label:hover {
+    color: var(--text-color);
+}
+
+.radio-group input[type="radio"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.radio-group input[type="radio"]:checked {
+    border-color: var(--primary-accent-color);
+    background-color: var(--primary-accent-color);
+}
+
+.radio-group input[type="radio"]:checked::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background-color: var(--background-color);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.setting-item {
+    margin-bottom: 1rem;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.setting-item input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+
+/* Responsive layout for smaller screens */
+@media (max-width: 600px) {
+    .main-menu-grid {
+        grid-template-columns: 1fr;
+    }
+
+    h1 {
+        font-size: 2.2rem;
+    }
+}
+
+/* --- Crosshair --- */
+/* --- Dev Advanced Sections --- */
+/* 當移除 hidden 時，顯示為 grid 以維持原有佈局 */
+.dev-advanced:not([hidden]) {
+    display: grid;
+}
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    display: none; /* 預設隱藏 */
+    width: 20px;
+    height: 20px;
+    z-index: 10; /* Ensure it's on top of the canvas */
+}
+
+.crosshair-line {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 5px rgba(255, 70, 85, 0.7);
+}
+
+#crosshair-top {
+    width: 2px;
+    height: 8px;
+    top: 0;
+    left: 9px;
+}
+
+#crosshair-bottom {
+    width: 2px;
+    height: 8px;
+    bottom: 0;
+    left: 9px;
+}
+
+#crosshair-left {
+    width: 8px;
+    height: 2px;
+    left: 0;
+    top: 9px;
+}
+
+#crosshair-right {
+    width: 8px;
+    height: 2px;
+    right: 0;
+    top: 9px;
+}
+
+#crosshair.visible {
+    display: block;
+}
