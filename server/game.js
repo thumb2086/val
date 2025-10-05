@@ -6,6 +6,7 @@ export default class Game {
     this.gameState = {
       mode: mode,
       killLimit: killLimit,
+      maxRounds: mode === 'skirmish' ? 10 : 0, // 10 rounds for Skirmish
       round: 0,
       score: { teamA: 0, teamB: 0 },
       teams: {},
@@ -119,34 +120,40 @@ export default class Game {
 
   // Modified checkRoundWin to checkWinCondition
   checkWinCondition(killerUsername = null, reason = null) {
-    const { players, bomb, mode, killLimit } = this.gameState;
+    const { players, bomb, mode, killLimit, score, maxRounds } = this.gameState;
 
     if (mode === 'deathmatch') {
       if (killerUsername && players[killerUsername].kills >= killLimit) {
         return { winner: killerUsername, type: 'kills' }; // Deathmatch winner
       }
       return null; // No winner yet
-    } else { // Team-based modes
-      let winner = null;
+    } else { // Team-based modes (5v5, skirmish)
+      let roundWinner = null;
       const alivePlayers = Object.values(players).filter(p => p.isAlive);
       const aliveTeamA = alivePlayers.filter(p => p.team === 'teamA').length;
       const aliveTeamB = alivePlayers.filter(p => p.team === 'teamB').length;
 
-      if (reason === 'bomb') {
-        winner = 'teamA';
-        this.gameState.score.teamA++;
-      } else if (reason === 'defuse') {
-        winner = 'teamB';
-        this.gameState.score.teamB++;
+      // Skirmish and 5v5 share elimination logic, but Skirmish ignores bomb
+      if (reason === 'bomb' && mode !== 'skirmish') {
+        roundWinner = 'teamA';
+      } else if (reason === 'defuse' && mode !== 'skirmish') {
+        roundWinner = 'teamB';
       } else if (aliveTeamB === 0) {
-        winner = 'teamA';
-        this.gameState.score.teamA++;
-        if (bomb.timer) clearTimeout(bomb.timer);
-      } else if (aliveTeamA === 0 && !bomb.planted) {
-        winner = 'teamB';
-        this.gameState.score.teamB++;
+        roundWinner = 'teamA';
+        if (bomb.timer) clearTimeout(bomb.timer); // Clear timer even in skirmish if it somehow gets set
+      } else if (aliveTeamA === 0 && (mode === 'skirmish' || !bomb.planted)) {
+        roundWinner = 'teamB';
       }
-      return winner ? { winner, type: 'round' } : null; // Return winner and type for team modes
+
+      if (roundWinner) {
+        this.gameState.score[roundWinner]++;
+        // Check for overall game win
+        if (this.gameState.score[roundWinner] >= maxRounds && mode === 'skirmish') {
+            return { winner: roundWinner, type: 'match' }; // Skirmish match winner
+        }
+        return { winner: roundWinner, type: 'round' }; // Announce round winner
+      }
+      return null; // No round winner yet
     }
   }
 

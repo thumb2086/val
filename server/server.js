@@ -289,16 +289,15 @@ io.on('connection', (socket) => {
           io.to(roomId).emit('playerDied', { username: targetUsername, killer: killerUsername }); // Notify clients of death
 
           if (winResult) { // If handleKill returned a winner
-            io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, gameState: game.gameState }); // New event for game end
-            // Optionally reset game or room after gameEnd
+            io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score, gameState: game.gameState }); // Use updated score
+
             setTimeout(() => {
-                // For deathmatch, maybe clear room or start new game
-                // For team modes, start new round
-                if (game.gameState.mode === 'deathmatch') {
-                    // Clear room or reset for new deathmatch game
-                    delete rooms[roomId]; // Example: remove room after deathmatch win
-                    io.to(roomId).emit('roomClosed'); // Notify clients
-                } else {
+                // If the match is over (deathmatch win or skirmish win), close the room.
+                if (winResult.type === 'kills' || winResult.type === 'match') {
+                    delete rooms[roomId];
+                    delete roomHosts[roomId]; // Also remove host tracking
+                    io.to(roomId).emit('roomClosed');
+                } else { // Otherwise, it's just a round win, so start a new round.
                     game.startNewRound(false);
                     io.to(roomId).emit('roundStart', game.gameState);
                 }
@@ -320,7 +319,7 @@ io.on('connection', (socket) => {
 
       game.gameState.bomb.timer = setTimeout(() => {
         const winResult = game.checkWinCondition(null, 'bomb'); // Pass reason
-        if (winResult) {
+        if (winResult && winResult.type === 'round') {
             io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
             setTimeout(() => {
                 game.startNewRound(false);
@@ -339,7 +338,7 @@ io.on('connection', (socket) => {
         game.gameState.bomb.timer = null;
         io.to(roomId).emit('bombDefused');
         const winResult = game.checkWinCondition(null, 'defuse'); // Pass reason
-        if (winResult) {
+        if (winResult && winResult.type === 'round') {
             io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
             setTimeout(() => {
                 game.startNewRound(false);
@@ -384,8 +383,14 @@ io.on('connection', (socket) => {
           if (winResult) {
             io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
             setTimeout(() => {
-              game.startNewRound(false);
-              io.to(roomId).emit('roundStart', game.gameState);
+                if (winResult.type === 'kills' || winResult.type === 'match') {
+                    delete rooms[roomId];
+                    delete roomHosts[roomId];
+                    io.to(roomId).emit('roomClosed');
+                } else {
+                    game.startNewRound(false);
+                    io.to(roomId).emit('roundStart', game.gameState);
+                }
             }, 5000);
           }
         }
@@ -414,8 +419,14 @@ io.on('connection', (socket) => {
             if(winResult) {
                 io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
                 setTimeout(() => {
-                    game.startNewRound(false);
-                    io.to(roomId).emit('roundStart', game.gameState);
+                    if (winResult.type === 'kills' || winResult.type === 'match') {
+                        delete rooms[roomId];
+                        delete roomHosts[roomId];
+                        io.to(roomId).emit('roomClosed');
+                    } else {
+                        game.startNewRound(false);
+                        io.to(roomId).emit('roundStart', game.gameState);
+                    }
                 }, 5000);
             }
           }
