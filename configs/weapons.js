@@ -1,6 +1,7 @@
 export const WEAPONS = {
   pistol: {
     name: 'Standard Pistol',
+    type: 'pistol',
     damage: 15,
     fireRate: 0.2, // 秒/發
     magazineSize: 12,
@@ -25,6 +26,7 @@ export const WEAPONS = {
   },
   rifle: {
     name: 'Assault Rifle',
+    type: 'rifle',
     damage: 30,
     fireRate: 0.1,
     magazineSize: 30,

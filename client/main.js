@@ -607,10 +607,27 @@ async function connectSocket(token) {
   });
 
   // 狀態更新：更新自己的血量 HUD
-  socket.on('gameStateUpdate', (gameState) => {
+  socket.on('gameStateUpdate', (data) => {
     if (!myUsername) return;
-    const me = gameState?.players?.[myUsername];
+    // The server now sends only the players object to keep the payload small
+    const me = data?.players?.[myUsername];
     if (me) updateHealth(me.health);
+  });
+
+  // 計分板更新
+  socket.on('leaderboardUpdate', (leaderboardData) => {
+    const scoreboardList = $('#scoreboard-list');
+    if (!scoreboardList) return;
+
+    scoreboardList.innerHTML = '';
+    leaderboardData.forEach(p => {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.justifyContent = 'space-between';
+      li.style.padding = '4px 0';
+      li.innerHTML = `<span>${p.username}</span><span>${p.kills}</span>`;
+      scoreboardList.appendChild(li);
+    });
   });
 
   socket.on('playerDied', ({ username, killer }) => {
@@ -640,24 +657,30 @@ async function connectSocket(token) {
 function bindMultiplayerUi() {
   const gameModeRadios = document.querySelectorAll('input[name="gameMode"]');
   const killLimitSetting = document.getElementById('kill-limit-setting');
+  const botCountSetting = document.getElementById('bot-count-setting');
 
-  function toggleKillLimitSetting() {
+  function updateDeathmatchSettings() {
     const selectedMode = document.querySelector('input[name="gameMode"]:checked')?.value;
+    const isDeathmatch = selectedMode === 'deathmatch';
     if (killLimitSetting) {
-        killLimitSetting.style.display = selectedMode === 'deathmatch' ? 'block' : 'none';
+        killLimitSetting.style.display = isDeathmatch ? 'block' : 'none';
+    }
+    if (botCountSetting) {
+        botCountSetting.style.display = isDeathmatch ? 'block' : 'none';
     }
   }
 
-  gameModeRadios.forEach(radio => radio.addEventListener('change', toggleKillLimitSetting));
+  gameModeRadios.forEach(radio => radio.addEventListener('change', updateDeathmatchSettings));
 
   // Set initial state
-  toggleKillLimitSetting();
+  updateDeathmatchSettings();
 
   $('#create-room-btn')?.addEventListener('click', () => {
     if (!socket) return toast('尚未連線');
     const mode = document.querySelector('input[name="gameMode"]:checked')?.value || 'deathmatch';
     const killLimit = parseInt($('#kill-limit-input').value || '40', 10);
-    socket.emit('createRoom', { mode, killLimit });
+    const botCount = parseInt($('#bot-count-input').value || '0', 10);
+    socket.emit('createRoom', { mode, killLimit, botCount });
   });
 
   $('#join-room-btn')?.addEventListener('click', () => {
@@ -848,6 +871,13 @@ function startMatch() {
   show(ammoDisplay);
   show(healthDisplay);
   updateHealth(100);
+
+  // 根據模式顯示/隱藏計分板
+  const scoreboard = $('#scoreboard');
+  if (scoreboard) {
+    scoreboard.style.display = currentMode === 'deathmatch' ? 'block' : 'none';
+  }
+
   // 回合開始強制顯示準心（避免尚未鎖定時看不到）
   crosshair?.show();
 
@@ -911,6 +941,11 @@ function endMatch() {
     document.exitPointerLock();
   }
   hide(healthDisplay);
+  // 隱藏計分板
+  const scoreboard = $('#scoreboard');
+  if (scoreboard) {
+    scoreboard.style.display = 'none';
+  }
 }
 
 // ========== Pause（Esc） ==========

@@ -13,6 +13,7 @@ import User from './models/User.js'; // Import User model
 import { AuthSystem } from './systems/AuthSystem.js';
 import Game from './game.js';
 import WeaponSystem from './systems/WeaponSystem.js';
+import BotController from './BotController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -181,17 +182,38 @@ io.on('connection', (socket) => {
   // 將目前使用者名稱告知前端
   socket.emit('me', { username: socket.username });
 
-  socket.on('createRoom', (data) => { // data = { mode: 'deathmatch', killLimit: 40 }
-    const { mode = '5v5', killLimit = 0 } = data; // Default values
+  socket.on('createRoom', (data) => {
+    const { mode = '5v5', killLimit = 40, botCount = 0 } = data;
     const roomId = Math.random().toString(36).substring(7);
-    const game = new Game(roomId, mode, killLimit); // Pass mode and killLimit
+    const game = new Game(roomId, mode, killLimit);
+
     game.addPlayer(socket.username);
-    rooms[roomId] = game; // Store game instance only
-    roomHosts[roomId] = socket.username; // Track host separately
+
+    // Add bots if it's a deathmatch game
+    const botNames = [];
+    if (mode === 'deathmatch' && botCount > 0) {
+      for (let i = 1; i <= botCount; i++) {
+        const botName = `Bot_${i}`;
+        game.addPlayer(botName);
+        botNames.push(botName);
+      }
+    }
+
+    rooms[roomId] = game;
+    roomHosts[roomId] = socket.username;
     socket.join(roomId);
     socket.emit('roomCreated', { roomId, host: socket.username });
-    // 立即廣播玩家列表，讓房主 UI 立即顯示
     io.to(roomId).emit('updatePlayers', game.players);
+
+    // Activate bot controllers after the room is set up
+    if (botNames.length > 0) {
+      botNames.forEach(botName => {
+        new BotController(botName, game, (killerUsername, targetUsername) => {
+          const damage = 15; // Bot shots deal 15 damage
+          handleDamage(roomId, killerUsername, targetUsername, damage);
+        });
+      });
+    }
   });
 
   socket.on('joinRoom', (roomId) => {
@@ -238,20 +260,6 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('trainingStarted', { roomId, gameState: game.gameState });
   });
 
-  socket.on('startRobotBattle', () => {
-    console.log(`Server received startRobotBattle from ${socket.username}`);
-    const roomId = "robot_" + Math.random().toString(36).substring(7);
-    const game = new Game(roomId);
-    game.addPlayer(socket.username);
-    game.addPlayer('robot1');
-    game.addPlayer('robot2');
-    game.gameState.mode = 'robotBattle';
-    rooms[roomId] = game;
-    socket.join(roomId);
-    game.startNewRound(true);
-    io.to(roomId).emit('robotBattleStarted', { roomId, gameState: game.gameState });
-  });
-
   socket.on('playerUpdate', (data) => { // { roomId, position, rotation }
     const { roomId, position, rotation } = data;
     const game = rooms[roomId];
@@ -274,8 +282,28 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('playerHit', (data) => {
-    const { roomId, targetUsername, damage, killerUsername } = data;
+  function processGameResult(roomId, result) {
+    const game = rooms[roomId];
+    if (!game || !result) return;
+
+    if (result.gameWinner) {
+      io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
+      if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
+      delete rooms[roomId];
+      delete roomHosts[roomId];
+      console.log(`Game over in room ${roomId}. Winner: ${result.gameWinner}`);
+    } else if (result.roundWinner) {
+      io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
+      setTimeout(() => {
+        if (rooms[roomId]) { // Check if room still exists
+          game.startNewRound(false);
+          io.to(roomId).emit('roundStart', game.gameState);
+        }
+      }, 5000);
+    }
+  }
+
+  function handleDamage(roomId, killerUsername, targetUsername, damage) {
     const game = rooms[roomId];
     if (!game) return;
 
@@ -283,28 +311,25 @@ io.on('connection', (socket) => {
     if (!targetPlayer || !targetPlayer.isAlive) return;
 
     targetPlayer.health -= damage;
-    io.to(roomId).emit('gameStateUpdate', game.gameState);
+    io.to(roomId).emit('gameStateUpdate', { players: game.gameState.players });
 
     if (targetPlayer.health <= 0) {
       targetPlayer.health = 0;
       io.to(roomId).emit('playerDied', { username: targetUsername, killer: killerUsername });
-
       const result = game.handleKill(killerUsername, targetUsername);
-      if (result) {
-        if (result.gameWinner) {
-          io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
-          if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
-          delete rooms[roomId];
-          delete roomHosts[roomId];
-        } else if (result.roundWinner) {
-          io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
-          setTimeout(() => {
-            game.startNewRound(false);
-            io.to(roomId).emit('roundStart', game.gameState);
-          }, 5000);
-        }
+
+      // If a kill happened in deathmatch, update the leaderboard for everyone
+      if (game.gameState.mode === 'deathmatch') {
+        io.to(roomId).emit('leaderboardUpdate', game.getLeaderboard());
       }
+
+      processGameResult(roomId, result);
     }
+  }
+
+  socket.on('playerHit', (data) => {
+    const { roomId, targetUsername, damage, killerUsername } = data;
+    handleDamage(roomId, killerUsername, targetUsername, damage);
   });
 
   socket.on('plantBomb', (data) => {
@@ -317,20 +342,8 @@ io.on('connection', (socket) => {
 
       game.gameState.bomb.timer = setTimeout(() => {
         const result = game.checkWinCondition('bomb_exploded');
-        if (result) {
-          if (result.gameWinner) {
-            io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
-            delete rooms[roomId];
-            delete roomHosts[roomId];
-          } else if (result.roundWinner) {
-            io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
-            setTimeout(() => {
-              game.startNewRound(false);
-              io.to(roomId).emit('roundStart', game.gameState);
-            }, 5000);
-          }
-        }
-      }, 45000); // 45s timer
+        processGameResult(roomId, result);
+      }, 45000);
     }
   });
 
@@ -338,21 +351,10 @@ io.on('connection', (socket) => {
     const { roomId } = data;
     const game = rooms[roomId];
     if (!game) return;
-
-    const result = game.defuseBomb(); // This now returns a win condition result
+    const result = game.defuseBomb();
     if (result) {
       io.to(roomId).emit('bombDefused');
-      if (result.gameWinner) {
-        io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
-        delete rooms[roomId];
-        delete roomHosts[roomId];
-      } else if (result.roundWinner) {
-        io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
-        setTimeout(() => {
-          game.startNewRound(false);
-          io.to(roomId).emit('roundStart', game.gameState);
-        }, 5000);
-      }
+      processGameResult(roomId, result);
     }
   });
 
@@ -388,20 +390,7 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('playerDisconnected', { username: socket.username, gameState: game.gameState });
         if (wasAlive && game.gameState.mode !== 'deathmatch') {
           const result = game.checkWinCondition();
-          if (result) {
-            if (result.gameWinner) {
-              io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: 'player_left', score: result.score });
-              if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
-              delete rooms[roomId];
-              delete roomHosts[roomId];
-            } else if (result.roundWinner) {
-              io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: 'player_left', score: result.score });
-              setTimeout(() => {
-                game.startNewRound(false);
-                io.to(roomId).emit('roundStart', game.gameState);
-              }, 5000);
-            }
-          }
+          processGameResult(roomId, result);
         }
       }
     }
