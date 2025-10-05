@@ -30,8 +30,6 @@ export default class WeaponSystem {
     this._gltfCache = new Map(); // modelPath -> gltf
     this._loadingModelPath = null; // 當前載入中的模型路徑
 
-    // Hands 模型管理
-    this._handsObject = null; // 目前掛在相機下的手部物件
     // 載入請求序號：避免快速切換武器時舊的載入結果覆蓋新武器
     this._loadRequestId = 0;
 
@@ -114,7 +112,7 @@ export default class WeaponSystem {
     const usesAmmo = weapon?.usesAmmo !== false;
     if (usesAmmo) this.ammoInMag -= 1;
 
-    // 播放音效/特效（之後接）
+    // 播放特效（之後接）
     // this.graphics?.playMuzzleFlash();
 
     if (usesAmmo) this.ui?.updateAmmo?.(this.ammoInMag, WEAPONS[this.currentWeaponId].magazineSize);
@@ -535,20 +533,49 @@ export default class WeaponSystem {
     }
     this._loadingModelPath = modelPath || '';
 
-    // 若沒有提供模型路徑（例如 knife），使用簡易幾何生成視圖模型
+    // 若沒有提供模型路徑，使用簡易幾何生成視圖模型
     if (!modelPath) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 0.02, 0.3),
-        new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.2, roughness: 0.6 })
-      );
-      const handle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.03, 0.06, 0.08),
-        new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.1, roughness: 0.9 })
-      );
-      handle.position.set(0, -0.04, 0.15);
+      const weaponConf = WEAPONS[this.currentWeaponId] || {};
       const group = new THREE.Group();
-      group.add(mesh);
-      group.add(handle);
+      let mainGeom, mainMat, handleGeom, handleMat;
+
+      // 根據武器類型創建不同的幾何形狀
+      switch (weaponConf.type) {
+        case 'melee':
+          mainGeom = new THREE.BoxGeometry(0.02, 0.04, 0.3); // Blade
+          mainMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.4 });
+          handleGeom = new THREE.BoxGeometry(0.03, 0.03, 0.1); // Handle
+          handleMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+          const blade = new THREE.Mesh(mainGeom, mainMat);
+          const handle_knife = new THREE.Mesh(handleGeom, handleMat);
+          handle_knife.position.set(0, 0, 0.15);
+          group.add(blade);
+          group.add(handle_knife);
+          break;
+        case 'pistol':
+          mainGeom = new THREE.BoxGeometry(0.04, 0.05, 0.18); // Slide
+          mainMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.6 });
+          handleGeom = new THREE.BoxGeometry(0.04, 0.1, 0.05); // Grip
+          handleMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+          const slide = new THREE.Mesh(mainGeom, mainMat);
+          const grip_pistol = new THREE.Mesh(handleGeom, handleMat);
+          grip_pistol.position.set(0, -0.05, 0.03);
+          group.add(slide);
+          group.add(grip_pistol);
+          break;
+        default: // Default to rifle
+          mainGeom = new THREE.BoxGeometry(0.05, 0.06, 0.6); // Body
+          mainMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.7 });
+          handleGeom = new THREE.BoxGeometry(0.04, 0.1, 0.06); // Grip
+          handleMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+          const body = new THREE.Mesh(mainGeom, mainMat);
+          const grip_rifle = new THREE.Mesh(handleGeom, handleMat);
+          grip_rifle.position.set(0, -0.05, -0.1);
+          group.add(body);
+          group.add(grip_rifle);
+          break;
+      }
+
       group.userData.isWeapon = true;
       group.userData.isPlaceholder = true;
       group.name = `weapon_${this.currentWeaponId}`;

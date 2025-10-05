@@ -93,6 +93,10 @@
                         <label for="kill-limit-input" style="display: block; margin-bottom: 0.5rem;">擊殺限制:</label>
                         <input type="number" id="kill-limit-input" value="40" min="1" max="100" class="auth-input">
                     </div>
+                    <div id="bot-count-setting" class="setting-item" style="margin: 1rem 0;">
+                        <label for="bot-count-input" style="display: block; margin-bottom: 0.5rem;">機器人數量:</label>
+                        <input type="number" id="bot-count-input" value="0" min="0" max="7" class="auth-input">
+                    </div>
                 </div>
                 <div class="room-actions" style="margin-top: 1rem;">
                     <button id="create-room-btn" class="btn btn-primary" style="display: block; width: 100%; margin-bottom: 1rem;">創建房間</button>
@@ -303,6 +307,14 @@
     <div id="game-stats-overlay" style="display: none; position: absolute; top: 10px; left: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 1.2rem; text-shadow: 1px 1px 2px black; z-index: 100;">
         <div id="kill-feed"></div>
         <div id="player-kills"></div>
+    </div>
+
+    <!-- Scoreboard -->
+    <div id="scoreboard" style="display: none; position: absolute; top: 10px; right: 10px; width: 250px; background-color: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-family: 'Inter', sans-serif; z-index: 101;">
+        <h3 style="margin-top: 0; text-align: center;">Scoreboard</h3>
+        <ul id="scoreboard-list" style="list-style: none; padding: 0; margin: 0;">
+            <!-- Player scores will be dynamically inserted here -->
+        </ul>
     </div>
 
     <!-- Health Display -->

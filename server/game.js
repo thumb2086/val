@@ -3,6 +3,16 @@ export default class Game {
   constructor(roomId, mode = '5v5', killLimit = 0) {
     this.roomId = roomId;
     this.players = [];
+    this.spawnPoints = [
+        { x: 10, y: 1, z: 10 },
+        { x: -10, y: 1, z: -10 },
+        { x: 10, y: 1, z: -10 },
+        { x: -10, y: 1, z: 10 },
+        { x: 0, y: 1, z: 15 },
+        { x: 0, y: 1, z: -15 },
+        { x: 15, y: 1, z: 0 },
+        { x: -15, y: 1, z: 0 }
+    ];
     this.gameState = {
       mode: mode,
       killLimit: killLimit,
@@ -56,7 +66,7 @@ export default class Game {
 
     for (const username of this.players) {
       this.gameState.players[username] = {
-        position: { x: 0, y: 0, z: 0 }, // Will need proper spawn points later
+        position: this.getSpawnPoint(),
         rotation: { x: 0, y: 0, z: 0 },
         health: 100,
         weapon: 'pistol',
@@ -76,22 +86,26 @@ export default class Game {
     killer.kills = (killer.kills || 0) + 1;
     victim.isAlive = false;
 
-    // For deathmatch, check for game win and handle respawn
+    // --- Deathmatch Logic ---
     if (this.gameState.mode === 'deathmatch') {
+      // Check for game winner
       if (killer.kills >= this.gameState.killLimit) {
-        return { gameWinner: killerUsername, reason: 'kill_limit' };
+        return { gameWinner: killerUsername, reason: 'kill_limit', score: this.getLeaderboard() };
       }
-      // Respawn logic
+      // Handle respawn
       setTimeout(() => {
-        victim.health = 100;
-        victim.isAlive = true;
-        // TODO: Use proper spawn points
-        victim.position = { x: Math.random() * 10 - 5, y: 2, z: Math.random() * 10 - 5 };
+        if (this.gameState.players[victimUsername]) {
+          victim.health = 100;
+          victim.isAlive = true;
+          victim.position = this.getSpawnPoint();
+        }
       }, 3000);
-      return null; // No game winner yet, round continues
+      // In deathmatch, there are no round winners, only a final game winner.
+      return null;
     }
 
-    // For team-based modes, check if the round is won
+    // --- Team-based Logic (Skirmish, 5v5) ---
+    // In team modes, a kill can lead to a round win.
     return this.checkWinCondition();
   }
 
@@ -105,51 +119,62 @@ export default class Game {
   }
 
   checkWinCondition(reason = null) {
-    let roundWinner = null;
-    let winReason = reason;
-
     const { players, bomb, mode, roundLimit, score } = this.gameState;
 
-    if (mode === 'deathmatch') return null;
+    if (mode === 'deathmatch') {
+      return null; // Deathmatch wins are handled in handleKill
+    }
+
+    let roundWinner = null;
+    let winReason = reason;
 
     const alivePlayers = Object.values(players).filter(p => p.isAlive);
     const aliveTeamA = alivePlayers.filter(p => p.team === 'teamA').length;
     const aliveTeamB = alivePlayers.filter(p => p.team === 'teamB').length;
 
-    if (reason === 'bomb_exploded') {
+    // --- Check for win conditions based on mode ---
+    if (mode === '5v5') {
+      if (reason === 'bomb_exploded') {
         roundWinner = 'teamA';
-    } else if (reason === 'bomb_defused') {
+      } else if (reason === 'bomb_defused') {
         roundWinner = 'teamB';
-    } else if (aliveTeamB === 0) {
+      } else if (aliveTeamB === 0) {
         roundWinner = 'teamA';
         winReason = 'elimination';
-    } else if (aliveTeamA === 0) {
-        if (mode !== '5v5' || !bomb || !bomb.planted) {
-            roundWinner = 'teamB';
-            winReason = 'elimination';
-        }
+      } else if (aliveTeamA === 0 && (!bomb || !bomb.planted)) {
+        roundWinner = 'teamB';
+        winReason = 'elimination';
+      }
+    } else if (mode === 'skirmish') {
+      if (aliveTeamB === 0) {
+        roundWinner = 'teamA';
+        winReason = 'elimination';
+      } else if (aliveTeamA === 0) {
+        roundWinner = 'teamB';
+        winReason = 'elimination';
+      }
     }
 
+    // --- If a round winner was determined, process the result ---
     if (roundWinner) {
-      if (roundWinner === 'teamA') {
-        score.teamA++;
-      } else {
-        score.teamB++;
-      }
+      if (roundWinner === 'teamA') score.teamA++;
+      else score.teamB++;
 
       if (winReason !== 'bomb_exploded' && bomb && bomb.timer) {
         clearTimeout(bomb.timer);
         this.gameState.bomb.timer = null;
       }
 
+      // Check if the game is over
       if (score.teamA >= roundLimit || score.teamB >= roundLimit) {
         return { gameWinner: roundWinner, reason: 'score_limit', score: this.gameState.score };
       }
 
+      // Otherwise, it's just a round win
       return { roundWinner, reason: winReason, score: this.gameState.score };
     }
 
-    return null;
+    return null; // No winner yet
   }
 
   // 切換玩家隊伍（僅非死鬥）
@@ -162,5 +187,19 @@ export default class Game {
       this.gameState.players[username].team = next;
     }
     return this.gameState.teams;
+  }
+
+  getSpawnPoint() {
+    return this.spawnPoints[Math.floor(Math.random() * this.spawnPoints.length)];
+  }
+
+  getLeaderboard() {
+    return Object.entries(this.gameState.players)
+      .map(([username, data]) => ({
+        username: username,
+        kills: data.kills || 0,
+        isAlive: data.isAlive
+      }))
+      .sort((a, b) => b.kills - a.kills);
   }
 }
