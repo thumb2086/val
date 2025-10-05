@@ -47,65 +47,65 @@
     <!-- Main Menu Screen -->
     <div id="main-menu-screen" class="menu-screen">
         <div class="menu-content">
-            <h1>特戰英豪原型</h1>
-            <div class="main-menu-grid">
-                <button id="target-practice-settings-btn" class="btn btn-primary"><i class="fa-solid fa-crosshairs"></i>靶場練習</button>
-                <button id="bot-battle-btn" class="btn btn-primary"><i class="fa-solid fa-robot"></i>機器人對戰</button>
-                <button id="multiplayer-btn" class="btn btn-primary"><i class="fa-solid fa-users"></i>多人對戰</button>
-                <button id="weapon-skins-btn" class="btn btn-primary"><i class="fa-solid fa-paintbrush"></i>武器塗裝</button>
-                <button id="settings-btn" class="btn btn-primary"><i class="fa-solid fa-gear"></i>設置</button>
-            </div>
+            <h1>PROTOTYPE</h1>
+            <nav class="main-menu-nav">
+                <button id="multiplayer-btn" class="btn btn-primary"><i class="fa-solid fa-users"></i> 多人對戰</button>
+                <button id="target-practice-settings-btn" class="btn btn-primary"><i class="fa-solid fa-crosshairs"></i> 靶場練習</button>
+                <button id="weapon-skins-btn" class="btn btn-primary"><i class="fa-solid fa-paintbrush"></i> 武器塗裝</button>
+                <button id="settings-btn" class="btn btn-primary"><i class="fa-solid fa-gear"></i> 設置</button>
+            </nav>
         </div>
     </div>
 
     <!-- Multiplayer Screen -->
     <div id="multiplayer-screen" class="menu-screen">
-        <div class="menu-content">
+        <div class="menu-content" style="max-width: 800px;">
             <h2>多人對戰</h2>
-            <div id="room-info" class="room-info-container" style="display: none;">
-                <p>房間號碼: <span id="room-id-display"></span></p>
-                <p>房主: <span id="room-host-display"></span></p>
-                <div>
-                    <h3 style="margin: 0.5rem 0;">玩家列表</h3>
-                    <ul id="player-list" style="list-style:none; padding-left:0; margin:0 0 0.5rem 0;"></ul>
+            <div class="multiplayer-lobby">
+                <!-- Left Column: Create Room -->
+                <div class="lobby-column">
+                    <h3>創建房間</h3>
+                    <div class="game-mode-selection">
+                        <h4>遊戲模式</h4>
+                        <div class="radio-group">
+                            <label><input type="radio" name="gameMode" value="deathmatch" checked> 死鬥 (Deathmatch)</label>
+                            <label><input type="radio" name="gameMode" value="skirmish"> 小規模衝突 (Skirmish)</label>
+                            <label><input type="radio" name="gameMode" value="5v5"> 5v5 拆彈 (Bomb Defusal)</label>
+                        </div>
+                    </div>
+                    <div id="kill-limit-setting" class="setting-item">
+                        <label for="kill-limit-input">擊殺限制:</label>
+                        <input type="number" id="kill-limit-input" value="20" min="1" max="100" class="auth-input">
+                    </div>
+                    <div id="bot-count-setting" class="setting-item">
+                        <label for="bot-count-input">機器人數量:</label>
+                        <input type="number" id="bot-count-input" value="1" min="0" max="7" class="auth-input">
+                    </div>
+                    <button id="create-room-btn" class="btn btn-primary">創建房間</button>
                 </div>
-                <div class="multiplayer-buttons" style="display:flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem;">
-                    <button id="start-game-btn" class="btn btn-primary" style="display: block;">開始遊戲</button>
-                    <button id="switch-team-btn" class="btn btn-secondary" style="display: block;">切換隊伍</button>
-                    <button id="leave-room-btn" class="btn btn-secondary" style="display: block;">退出房間</button>
+
+                <!-- Right Column: Join Room / Room Info -->
+                <div class="lobby-column">
+                    <div id="join-create-room-section">
+                        <h3>加入房間</h3>
+                        <input type="text" id="room-id-input" placeholder="輸入房間號碼" class="auth-input">
+                        <button id="join-room-btn" class="btn btn-primary">加入房間</button>
+                    </div>
+                    <div id="room-info" style="display: none;">
+                        <h3>房間資訊</h3>
+                        <p><strong>房間號碼:</strong> <span id="room-id-display"></span></p>
+                        <p><strong>房主:</strong> <span id="room-host-display"></span></p>
+                        <h4 style="margin-top: 1rem;">玩家列表</h4>
+                        <ul id="player-list"></ul>
+                        <div class="multiplayer-buttons">
+                            <button id="start-game-btn" class="btn btn-primary">開始遊戲</button>
+                            <button id="switch-team-btn" class="btn btn-secondary">切換隊伍</button>
+                            <button id="leave-room-btn" class="btn btn-secondary">退出房間</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div id="join-create-room-section" style="display: block;">
-                <div class="game-mode-selection">
-                    <h3>遊戲模式</h3>
-                    <div class="radio-group">
-                        <label style="display: block; margin: 0.5rem 0;">
-                            <input type="radio" name="gameMode" value="deathmatch" checked> 死鬥 (Deathmatch)
-                        </label>
-                        <label style="display: block; margin: 0.5rem 0;">
-                            <input type="radio" name="gameMode" value="5v5"> 5v5 拆彈 (Bomb Defusal)
-                        </label>
-                        <label style="display: block; margin: 0.5rem 0;">
-                            <input type="radio" name="gameMode" value="skirmish"> 小規模衝突 (Skirmish)
-                        </label>
-                    </div>
-                    <div id="kill-limit-setting" class="setting-item" style="margin: 1rem 0;">
-                        <label for="kill-limit-input" style="display: block; margin-bottom: 0.5rem;">擊殺限制:</label>
-                        <input type="number" id="kill-limit-input" value="40" min="1" max="100" class="auth-input">
-                    </div>
-                    <div id="bot-count-setting" class="setting-item" style="margin: 1rem 0;">
-                        <label for="bot-count-input" style="display: block; margin-bottom: 0.5rem;">機器人數量:</label>
-                        <input type="number" id="bot-count-input" value="0" min="0" max="7" class="auth-input">
-                    </div>
-                </div>
-                <div class="room-actions" style="margin-top: 1rem;">
-                    <button id="create-room-btn" class="btn btn-primary" style="display: block; width: 100%; margin-bottom: 1rem;">創建房間</button>
-                    <hr class="divider" style="margin: 1rem 0;">
-                    <input type="text" id="room-id-input" placeholder="輸入房間號碼" class="auth-input" style="margin-bottom: 1rem;">
-                    <button id="join-room-btn" class="btn btn-primary" style="display: block; width: 100%;">加入房間</button>
-                </div>
-            </div>
-            <button id="back-to-main-multiplayer" class="btn btn-secondary" style="display: block; margin-top: 2rem;">返回主選單</button>
+            <button id="back-to-main-multiplayer" class="btn btn-secondary" style="margin-top: 2rem;">返回主選單</button>
         </div>
     </div>
 
@@ -302,6 +302,10 @@
         <div class="crosshair-line" id="crosshair-left"></div>
         <div class="crosshair-line" id="crosshair-right"></div>
     </div>
+
+    <!-- Damage/Kill Feedback -->
+    <div id="damage-indicator" class="hidden"></div>
+    <div id="kill-confirm" class="hidden"><i class="fa-solid fa-skull"></i></div>
 
     <!-- Game Stats Overlay -->
     <div id="game-stats-overlay" style="display: none; position: absolute; top: 10px; left: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 1.2rem; text-shadow: 1px 1px 2px black; z-index: 100;">

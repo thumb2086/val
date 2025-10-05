@@ -86,13 +86,10 @@ export default class Game {
     killer.kills = (killer.kills || 0) + 1;
     victim.isAlive = false;
 
-    // --- Deathmatch Logic ---
     if (this.gameState.mode === 'deathmatch') {
-      // Check for game winner
       if (killer.kills >= this.gameState.killLimit) {
         return { gameWinner: killerUsername, reason: 'kill_limit', score: this.getLeaderboard() };
       }
-      // Handle respawn
       setTimeout(() => {
         if (this.gameState.players[victimUsername]) {
           victim.health = 100;
@@ -100,13 +97,10 @@ export default class Game {
           victim.position = this.getSpawnPoint();
         }
       }, 3000);
-      // In deathmatch, there are no round winners, only a final game winner.
       return null;
     }
 
-    // --- Team-based Logic (Skirmish, 5v5) ---
-    // In team modes, a kill can lead to a round win.
-    return this.checkWinCondition();
+    return this.checkWinCondition('elimination');
   }
 
   defuseBomb() {
