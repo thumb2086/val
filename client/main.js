@@ -638,6 +638,21 @@ async function connectSocket(token) {
 
 // ========== 多人房間 UI 綁定 ==========
 function bindMultiplayerUi() {
+  const gameModeRadios = document.querySelectorAll('input[name="gameMode"]');
+  const killLimitSetting = document.getElementById('kill-limit-setting');
+
+  function toggleKillLimitSetting() {
+    const selectedMode = document.querySelector('input[name="gameMode"]:checked')?.value;
+    if (killLimitSetting) {
+        killLimitSetting.style.display = selectedMode === 'deathmatch' ? 'block' : 'none';
+    }
+  }
+
+  gameModeRadios.forEach(radio => radio.addEventListener('change', toggleKillLimitSetting));
+
+  // Set initial state
+  toggleKillLimitSetting();
+
   $('#create-room-btn')?.addEventListener('click', () => {
     if (!socket) return toast('尚未連線');
     const mode = document.querySelector('input[name="gameMode"]:checked')?.value || 'deathmatch';

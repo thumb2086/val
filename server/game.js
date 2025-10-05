@@ -6,16 +6,12 @@ export default class Game {
     this.gameState = {
       mode: mode,
       killLimit: killLimit,
+      roundLimit: mode === 'skirmish' ? 10 : 13, // Skirmish wins at 10 rounds, 5v5 at 13
       round: 0,
       score: { teamA: 0, teamB: 0 },
       teams: {},
       players: {},
-      bomb: {
-        planted: false,
-        position: null,
-        timer: null,
-        defused: false
-      }
+      bomb: null // Will be initialized in startNewRound if needed
     };
   }
 
@@ -51,7 +47,12 @@ export default class Game {
       this.gameState.round++;
     }
 
-    this.gameState.bomb = { planted: false, position: null, timer: null, defused: false };
+    // Initialize bomb only for '5v5' mode
+    if (this.gameState.mode === '5v5') {
+      this.gameState.bomb = { planted: false, position: null, timer: null, defused: false };
+    } else {
+      this.gameState.bomb = null;
+    }
 
     for (const username of this.players) {
       this.gameState.players[username] = {
@@ -66,88 +67,89 @@ export default class Game {
     }
   }
 
-  // New method to handle a kill
   handleKill(killerUsername, victimUsername) {
     const killer = this.gameState.players[killerUsername];
     const victim = this.gameState.players[victimUsername];
 
-    if (killer && victim) {
-      killer.kills++; // Increment killer's kill count
-      victim.isAlive = false; // Mark victim as dead
+    if (!killer || !victim || !victim.isAlive) return null;
 
-      // Respawn victim for deathmatch
-      if (this.gameState.mode === 'deathmatch') {
-        setTimeout(() => {
-          victim.health = 100;
-          victim.isAlive = true;
-          // Need a proper respawn point here
-          victim.position = { x: Math.random() * 10 - 5, y: 2, z: Math.random() * 10 - 5 }; // Temporary random respawn
-          // Notify clients about respawn
-          // io.to(this.roomId).emit('playerRespawned', { username: victimUsername, position: victim.position });
-        }, 3000); // 3 second respawn timer
+    killer.kills = (killer.kills || 0) + 1;
+    victim.isAlive = false;
+
+    // For deathmatch, check for game win and handle respawn
+    if (this.gameState.mode === 'deathmatch') {
+      if (killer.kills >= this.gameState.killLimit) {
+        return { gameWinner: killerUsername, reason: 'kill_limit' };
       }
+      // Respawn logic
+      setTimeout(() => {
+        victim.health = 100;
+        victim.isAlive = true;
+        // TODO: Use proper spawn points
+        victim.position = { x: Math.random() * 10 - 5, y: 2, z: Math.random() * 10 - 5 };
+      }, 3000);
+      return null; // No game winner yet, round continues
+    }
 
-      // Check win condition after a kill
-      return this.checkWinCondition(killerUsername); // Pass killer to check win condition
+    // For team-based modes, check if the round is won
+    return this.checkWinCondition();
+  }
+
+  defuseBomb() {
+    if (this.gameState.bomb && this.gameState.bomb.planted && !this.gameState.bomb.defused) {
+      this.gameState.bomb.defused = true;
+      // When defuse is successful, it's a win condition
+      return this.checkWinCondition('bomb_defused');
     }
     return null;
   }
 
-  takeDamage(username, damageAmount) {
-    const player = this.gameState.players[username];
-    if (player && player.isAlive) {
-      player.health -= damageAmount;
-      if (player.health <= 0) {
-        player.health = 0;
-        player.isAlive = false;
-        // This is where you'd typically emit a 'playerDied' event to clients
-        // For now, we'll assume handleKill is called separately or integrated here.
-        return { died: true, health: player.health };
-      }
-      return { died: false, health: player.health };
+  checkWinCondition(reason = null) {
+    let roundWinner = null;
+    let winReason = reason;
+
+    const { players, bomb, mode, roundLimit, score } = this.gameState;
+
+    if (mode === 'deathmatch') return null;
+
+    const alivePlayers = Object.values(players).filter(p => p.isAlive);
+    const aliveTeamA = alivePlayers.filter(p => p.team === 'teamA').length;
+    const aliveTeamB = alivePlayers.filter(p => p.team === 'teamB').length;
+
+    if (reason === 'bomb_exploded') {
+        roundWinner = 'teamA';
+    } else if (reason === 'bomb_defused') {
+        roundWinner = 'teamB';
+    } else if (aliveTeamB === 0) {
+        roundWinner = 'teamA';
+        winReason = 'elimination';
+    } else if (aliveTeamA === 0) {
+        if (mode !== '5v5' || !bomb || !bomb.planted) {
+            roundWinner = 'teamB';
+            winReason = 'elimination';
+        }
     }
-    return { died: false, health: player ? player.health : 0 }; // Return current health or 0 if player not found
-  }
 
-  defuseBomb() {
-    if (this.gameState.bomb.planted && !this.gameState.bomb.defused) {
-      this.gameState.bomb.defused = true;
-      return true;
-    }
-    return false;
-  }
-
-  // Modified checkRoundWin to checkWinCondition
-  checkWinCondition(killerUsername = null, reason = null) {
-    const { players, bomb, mode, killLimit } = this.gameState;
-
-    if (mode === 'deathmatch') {
-      if (killerUsername && players[killerUsername].kills >= killLimit) {
-        return { winner: killerUsername, type: 'kills' }; // Deathmatch winner
+    if (roundWinner) {
+      if (roundWinner === 'teamA') {
+        score.teamA++;
+      } else {
+        score.teamB++;
       }
-      return null; // No winner yet
-    } else { // Team-based modes
-      let winner = null;
-      const alivePlayers = Object.values(players).filter(p => p.isAlive);
-      const aliveTeamA = alivePlayers.filter(p => p.team === 'teamA').length;
-      const aliveTeamB = alivePlayers.filter(p => p.team === 'teamB').length;
 
-      if (reason === 'bomb') {
-        winner = 'teamA';
-        this.gameState.score.teamA++;
-      } else if (reason === 'defuse') {
-        winner = 'teamB';
-        this.gameState.score.teamB++;
-      } else if (aliveTeamB === 0) {
-        winner = 'teamA';
-        this.gameState.score.teamA++;
-        if (bomb.timer) clearTimeout(bomb.timer);
-      } else if (aliveTeamA === 0 && !bomb.planted) {
-        winner = 'teamB';
-        this.gameState.score.teamB++;
+      if (winReason !== 'bomb_exploded' && bomb && bomb.timer) {
+        clearTimeout(bomb.timer);
+        this.gameState.bomb.timer = null;
       }
-      return winner ? { winner, type: 'round' } : null; // Return winner and type for team modes
+
+      if (score.teamA >= roundLimit || score.teamB >= roundLimit) {
+        return { gameWinner: roundWinner, reason: 'score_limit', score: this.gameState.score };
+      }
+
+      return { roundWinner, reason: winReason, score: this.gameState.score };
     }
+
+    return null;
   }
 
   // 切換玩家隊伍（僅非死鬥）

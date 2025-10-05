@@ -50,20 +50,11 @@ export class Graphics {
     this.scene.add(cube);
 
     const planeGeo = new THREE.PlaneGeometry(50, 50);
-    // 為地板套用 granite 貼圖
-    const texLoader = new THREE.TextureLoader();
-    const floorMap = texLoader.load('assets/textures/granite_tile_diff_4k.jpg');
-    floorMap.wrapS = floorMap.wrapT = THREE.RepeatWrapping;
-    floorMap.repeat.set(8, 8);
-    const floorDisp = texLoader.load('assets/textures/granite_tile_disp_4k.png');
-    floorDisp.wrapS = floorDisp.wrapT = THREE.RepeatWrapping;
-    floorDisp.repeat.set(8, 8);
+    // 將地板材質替換為簡單的灰色
     const planeMat = new THREE.MeshStandardMaterial({
-      map: floorMap,
-      bumpMap: floorDisp,
-      bumpScale: 0.03,
-      roughness: 1.0,
-      metalness: 0.0
+      color: 0x808080, // 灰色
+      roughness: 0.8,
+      metalness: 0.2
     });
     const plane = new THREE.Mesh(planeGeo, planeMat);
     plane.rotation.x = -Math.PI / 2;

@@ -274,78 +274,85 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('playerHit', (data) => { // { roomId, targetUsername, damage, killerUsername }
-    const { roomId, targetUsername, damage, killerUsername } = data; // Add killerUsername
+  socket.on('playerHit', (data) => {
+    const { roomId, targetUsername, damage, killerUsername } = data;
     const game = rooms[roomId];
-    if (game && game.gameState.players[targetUsername]) {
-      const targetPlayer = game.gameState.players[targetUsername];
-      if (targetPlayer.isAlive) {
-        targetPlayer.health -= damage;
-        if (targetPlayer.health <= 0) {
-          targetPlayer.health = 0;
-          // Call handleKill instead of direct playerDied and checkRoundWin
-          const winResult = game.handleKill(killerUsername, targetUsername); // handleKill returns winResult
+    if (!game) return;
 
-          io.to(roomId).emit('playerDied', { username: targetUsername, killer: killerUsername }); // Notify clients of death
+    const targetPlayer = game.gameState.players[targetUsername];
+    if (!targetPlayer || !targetPlayer.isAlive) return;
 
-          if (winResult) { // If handleKill returned a winner
-            io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, gameState: game.gameState }); // New event for game end
-            // Optionally reset game or room after gameEnd
-            setTimeout(() => {
-                // For deathmatch, maybe clear room or start new game
-                // For team modes, start new round
-                if (game.gameState.mode === 'deathmatch') {
-                    // Clear room or reset for new deathmatch game
-                    delete rooms[roomId]; // Example: remove room after deathmatch win
-                    io.to(roomId).emit('roomClosed'); // Notify clients
-                } else {
-                    game.startNewRound(false);
-                    io.to(roomId).emit('roundStart', game.gameState);
-                }
-            }, 5000);
-          }
+    targetPlayer.health -= damage;
+    io.to(roomId).emit('gameStateUpdate', game.gameState);
+
+    if (targetPlayer.health <= 0) {
+      targetPlayer.health = 0;
+      io.to(roomId).emit('playerDied', { username: targetUsername, killer: killerUsername });
+
+      const result = game.handleKill(killerUsername, targetUsername);
+      if (result) {
+        if (result.gameWinner) {
+          io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
+          if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
+          delete rooms[roomId];
+          delete roomHosts[roomId];
+        } else if (result.roundWinner) {
+          io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
+          setTimeout(() => {
+            game.startNewRound(false);
+            io.to(roomId).emit('roundStart', game.gameState);
+          }, 5000);
         }
-        io.to(roomId).emit('gameStateUpdate', game.gameState); // Always send updated state
       }
     }
   });
 
-  socket.on('plantBomb', (data) => { // { roomId, position }
+  socket.on('plantBomb', (data) => {
     const { roomId, position } = data;
     const game = rooms[roomId];
-    if (game && !game.gameState.bomb.planted && game.gameState.teams[socket.username] === 'teamA') {
+    if (game && game.gameState.mode === '5v5' && game.gameState.bomb && !game.gameState.bomb.planted && game.gameState.teams[socket.username] === 'teamA') {
       game.gameState.bomb.planted = true;
       game.gameState.bomb.position = position;
       io.to(roomId).emit('bombPlanted', { position });
 
       game.gameState.bomb.timer = setTimeout(() => {
-        const winResult = game.checkWinCondition(null, 'bomb'); // Pass reason
-        if (winResult) {
-            io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
+        const result = game.checkWinCondition('bomb_exploded');
+        if (result) {
+          if (result.gameWinner) {
+            io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
+            delete rooms[roomId];
+            delete roomHosts[roomId];
+          } else if (result.roundWinner) {
+            io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
             setTimeout(() => {
-                game.startNewRound(false);
-                io.to(roomId).emit('roundStart', game.gameState);
+              game.startNewRound(false);
+              io.to(roomId).emit('roundStart', game.gameState);
             }, 5000);
+          }
         }
       }, 45000); // 45s timer
     }
   });
 
-    socket.on('defuseBomb', (data) => { // { roomId }
+  socket.on('defuseBomb', (data) => {
     const { roomId } = data;
     const game = rooms[roomId];
-    if (game && game.defuseBomb()) {
-        clearTimeout(game.gameState.bomb.timer);
-        game.gameState.bomb.timer = null;
-        io.to(roomId).emit('bombDefused');
-        const winResult = game.checkWinCondition(null, 'defuse'); // Pass reason
-        if (winResult) {
-            io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
-            setTimeout(() => {
-                game.startNewRound(false);
-                io.to(roomId).emit('roundStart', game.gameState);
-            }, 5000);
-        }
+    if (!game) return;
+
+    const result = game.defuseBomb(); // This now returns a win condition result
+    if (result) {
+      io.to(roomId).emit('bombDefused');
+      if (result.gameWinner) {
+        io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: result.reason, score: result.score });
+        delete rooms[roomId];
+        delete roomHosts[roomId];
+      } else if (result.roundWinner) {
+        io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: result.reason, score: result.score });
+        setTimeout(() => {
+          game.startNewRound(false);
+          io.to(roomId).emit('roundStart', game.gameState);
+        }, 5000);
+      }
     }
   });
 
@@ -361,65 +368,54 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 玩家主動離開房間
-  socket.on('leaveRoom', (roomId) => {
+  function handlePlayerLeave(socket, roomId) {
     const game = rooms[roomId];
     if (!game) return;
-    const idx = game.players.indexOf(socket.username);
-    if (idx > -1) {
+
+    const playerIndex = game.players.indexOf(socket.username);
+    if (playerIndex > -1) {
       const wasAlive = game.gameState.players[socket.username]?.isAlive;
-      game.players.splice(idx, 1);
+      game.players.splice(playerIndex, 1);
       delete game.gameState.players[socket.username];
       socket.leave(roomId);
-      // 若房間空了，清除
+
       if (game.players.length === 0) {
-        if (game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
+        if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
         delete rooms[roomId];
         delete roomHosts[roomId];
-        io.to(roomId).emit('roomClosed');
+        console.log(`Room ${roomId} closed.`);
       } else {
         io.to(roomId).emit('playerDisconnected', { username: socket.username, gameState: game.gameState });
         if (wasAlive && game.gameState.mode !== 'deathmatch') {
-          const winResult = game.checkWinCondition();
-          if (winResult) {
-            io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
-            setTimeout(() => {
-              game.startNewRound(false);
-              io.to(roomId).emit('roundStart', game.gameState);
-            }, 5000);
+          const result = game.checkWinCondition();
+          if (result) {
+            if (result.gameWinner) {
+              io.to(roomId).emit('gameEnd', { winner: result.gameWinner, reason: 'player_left', score: result.score });
+              if (game.gameState.bomb && game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
+              delete rooms[roomId];
+              delete roomHosts[roomId];
+            } else if (result.roundWinner) {
+              io.to(roomId).emit('roundEnd', { winner: result.roundWinner, reason: 'player_left', score: result.score });
+              setTimeout(() => {
+                game.startNewRound(false);
+                io.to(roomId).emit('roundStart', game.gameState);
+              }, 5000);
+            }
           }
         }
       }
     }
+  }
+
+  socket.on('leaveRoom', (roomId) => {
+    handlePlayerLeave(socket, roomId);
   });
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.username}`);
     for (const roomId in rooms) {
-      const game = rooms[roomId];
-      const playerIndex = game.players.indexOf(socket.username);
-      if (playerIndex > -1) {
-        const wasAlive = game.gameState.players[socket.username]?.isAlive;
-        game.players.splice(playerIndex, 1);
-        delete game.gameState.players[socket.username];
-
-        if (game.players.length === 0) {
-          if (game.gameState.bomb.timer) clearTimeout(game.gameState.bomb.timer);
-          delete rooms[roomId];
-          delete roomHosts[roomId];
-        } else {
-          io.to(roomId).emit('playerDisconnected', { username: socket.username, gameState: game.gameState });
-          if (wasAlive && game.gameState.mode !== 'deathmatch') { // Only check round win for team modes on disconnect
-            const winResult = game.checkWinCondition();
-            if(winResult) {
-                io.to(roomId).emit('gameEnd', { winner: winResult.winner, type: winResult.type, score: game.gameState.score });
-                setTimeout(() => {
-                    game.startNewRound(false);
-                    io.to(roomId).emit('roundStart', game.gameState);
-                }, 5000);
-            }
-          }
-        }
+      if (rooms[roomId].players.includes(socket.username)) {
+        handlePlayerLeave(socket, roomId);
       }
     }
   });
