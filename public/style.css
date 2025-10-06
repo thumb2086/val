@@ -11,7 +11,7 @@
   --text-color: #e0e0e0;
   --text-color-muted: #888;
   --border-color: #2e2e2e;
-  --font-family: 'Inter', sans-serif;
+  --font-family: 'Noto Sans TC', sans-serif;
 }
 
 /* --- General Resets & Body --- */
@@ -333,6 +333,11 @@ h2 {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 100;
+    display: none; /* Hidden by default */
+}
+
+#crosshair.visible {
+    display: block;
 }
 
 .crosshair-line {
