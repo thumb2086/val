@@ -33,7 +33,7 @@ export default class PlayerController {
     const moveStrafe = (this.keyStates['KeyD'] ? 1 : 0) - (this.keyStates['KeyA'] ? 1 : 0);
 
     if (moveForward === 0 && moveStrafe === 0) {
-        return;
+      return;
     }
 
     this.camera.getWorldDirection(this._forward);
@@ -55,7 +55,7 @@ export default class PlayerController {
     const movementY = this.mouseStates.movementY || 0;
 
     if (movementX === 0 && movementY === 0) {
-        return;
+      return;
     }
 
     this.yaw -= movementX * 0.002 * currentSensitivity;

@@ -50,11 +50,11 @@ export class Graphics {
     this.scene.add(cube);
 
     const planeGeo = new THREE.PlaneGeometry(50, 50);
-    // 將地板材質替換為簡單的灰色
+    // 使用簡單顏色取代貼圖
     const planeMat = new THREE.MeshStandardMaterial({
-      color: 0x808080, // 灰色
+      color: 0x444444,
       roughness: 0.8,
-      metalness: 0.2
+      metalness: 0.1
     });
     const plane = new THREE.Mesh(planeGeo, planeMat);
     plane.rotation.x = -Math.PI / 2;
@@ -75,7 +75,7 @@ export class Graphics {
 
   getCamera() { return this.camera; }
 
-  render(dt) {
+  render() {
     if (!this.initialized) return;
     this.renderer.render(this.scene, this.camera);
   }

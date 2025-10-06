@@ -29,9 +29,9 @@ export default class WeaponSystem {
   }
 
   // 處理射擊請求（由 server/server.js 的 socket.on('shoot') 轉呼叫）
-  // params: { roomId, point, weaponId }
+  // params: { socket, game, point, weaponId }
   // returns: { ok, reason?, broadcast?: { event, payload } }
-  handleShoot({ socket, game, roomId, point, weaponId }) {
+  handleShoot({ socket, game, point, weaponId }) {
     const username = socket.username;
 
     // 基本驗證：玩家存在、存活
