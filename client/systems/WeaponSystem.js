@@ -94,152 +94,42 @@ export default class WeaponSystem {
   fire({ roomId, aimPoint }) {
     const now = performance.now();
     if (!this.canFire(now)) {
-      // 輕量除錯：輸出無法開火原因（冷卻/彈藥/重裝）
-      try {
-        const w = WEAPONS[this.currentWeaponId];
-        const usesAmmo = w?.usesAmmo !== false;
-        const intervalMs = (w?.fireRate || 0) * 1000;
-        const cd = now - this.lastShotAt;
-        if (this.isReloading) console.debug('[WeaponSystem] 無法開火：正在換彈');
-        else if (usesAmmo && this.ammoInMag <= 0) console.debug('[WeaponSystem] 無法開火：彈匣為 0');
-        else if (cd < intervalMs) console.debug('[WeaponSystem] 無法開火：冷卻中', { cd: Math.round(cd), need: Math.round(intervalMs) });
-      } catch {}
       return false;
     }
 
     this.lastShotAt = now;
     const weapon = WEAPONS[this.currentWeaponId];
     const usesAmmo = weapon?.usesAmmo !== false;
-    if (usesAmmo) this.ammoInMag -= 1;
+    if (usesAmmo) {
+      this.ammoInMag -= 1;
+    }
 
-    // 播放特效（之後接）
-    // this.graphics?.playMuzzleFlash();
+    if (usesAmmo) {
+      this.ui?.updateAmmo?.(this.ammoInMag, WEAPONS[this.currentWeaponId].magazineSize);
+    }
 
-    if (usesAmmo) this.ui?.updateAmmo?.(this.ammoInMag, WEAPONS[this.currentWeaponId].magazineSize);
-
-    // 產生子彈軌跡（tracer）
+    // --- New Bullet Trajectory Logic ---
     try {
       const cam = this.graphics?.getCamera?.();
       if (cam && this.bullets) {
-        // 確保矩陣為最新，避免位置/朝向延遲
         cam.updateMatrixWorld(true);
-        this._weaponObject?.updateMatrixWorld(true);
-        // 優先使用槍口位置作為發射點，若不可得再回退到相機前方
-        const dir = cam.getWorldDirection(new THREE.Vector3()).normalize();
-        const camPos = cam.getWorldPosition(new THREE.Vector3());
-        const near = Math.max(0.01, cam.near || 0.1);
-        const muzzle = this._getMuzzleWorldPosition?.();
-        let from = muzzle ? muzzle.clone() : camPos.clone().add(dir.clone().multiplyScalar(Math.max(0.2, near * 2)));
-        // 若槍口在相機後方或太靠近近裁面，回退到相機前方
-        const vecCamToFrom = from.clone().sub(camPos);
-        if (vecCamToFrom.dot(dir) <= 0 || vecCamToFrom.length() < near * 1.2) {
-          from = camPos.clone().add(dir.clone().multiplyScalar(Math.max(0.2, near * 2)));
-        }
-        // 目標點
-        let to = aimPoint
-          ? new THREE.Vector3(aimPoint.x, aimPoint.y, aimPoint.z)
-          : from.clone().add(dir.clone().multiplyScalar(1000));
-        // 保險：避免零長度/NaN
-        if (!isFinite(from.x) || !isFinite(from.y) || !isFinite(from.z)) from = camPos.clone().add(dir.clone().multiplyScalar(Math.max(0.2, near * 2)));
-        if (!isFinite(to.x) || !isFinite(to.y) || !isFinite(to.z)) to = from.clone().add(dir.clone().multiplyScalar(1000));
-        if (to.clone().sub(from).lengthSq() < 1e-6) to.add(dir.clone().multiplyScalar(1));
-        // 輕量除錯：一次性輸出起迄點距離
-        try {
-          const dist = to.clone().sub(from).length();
-          console.debug('[WeaponSystem] spawnTracer', { dist: Math.round(dist), from: { x: from.x.toFixed(2), y: from.y.toFixed(2), z: from.z.toFixed(2) } });
-        } catch {}
+
+        // The bullet should always originate from the camera's position
+        const from = cam.getWorldPosition(new THREE.Vector3());
+
+        // The bullet should always travel straight forward from the camera's center
+        const direction = cam.getWorldDirection(new THREE.Vector3());
+        const to = from.clone().add(direction.multiplyScalar(1000));
+
         this.bullets.spawnTracer(from, to);
       }
     } catch (e) {
-      console.warn('[WeaponSystem] 產生 tracer 發生例外:', e);
+      console.warn('[WeaponSystem] Error spawning tracer:', e);
     }
 
-    // 通知伺服器（射擊事件）
+    // Notify the server about the shot. `aimPoint` is now derived from the camera's direction.
     this.network?.emit?.('shoot', { roomId, point: aimPoint, weaponId: this.currentWeaponId });
     return true;
-  }
-
-  // 估算武器槍口世界座標：
-  // 以目前掛在相機下的武器群組（this._weaponObject）為基礎，
-  // 取包圍盒中心 worldCenter 與世界朝前向量 worldForward（群組 -Z），
-  // 沿前向量推 sizeZ/2 的距離即視為槍口位置。
-  _getMuzzleWorldPosition() {
-    const group = this._weaponObject;
-    if (!group) return null;
-    try {
-      // 保險：確保矩陣為最新（即使由非 fire() 的呼叫點觸發）
-      try { this.graphics?.getCamera?.()?.updateMatrixWorld(true); } catch {}
-      try { group.updateMatrixWorld(true); } catch {}
-      // 讀取配置 + 覆寫
-      const baseVM = WEAPONS[this.currentWeaponId]?.viewModel || {};
-      const skin = WEAPONS[this.currentWeaponId]?.skins?.[this.skinIndex];
-      const skinVM = (skin && skin.viewModel) ? skin.viewModel : {};
-      let merged = { ...baseVM, ...skinVM };
-      try {
-        const ov = this._readViewOverride?.(this.currentWeaponId, this.skinIndex);
-        if (ov && typeof ov === 'object') merged = { ...merged, ...ov };
-      } catch {}
-      const vm = merged;
-
-      // 先計算「預設槍口」：以群組（已自動置中）之包圍盒中心與大小，沿世界前向（-Z）推出半長度
-      const box = new THREE.Box3().setFromObject(group);
-      if (!box || !isFinite(box.min.x) || !isFinite(box.max.x)) return null;
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-      const worldForward = new THREE.Vector3(0, 0, -1).applyQuaternion(group.getWorldQuaternion(new THREE.Quaternion())).normalize();
-      const baseWorld = center.clone().add(worldForward.clone().multiplyScalar(size.z * 0.5));
-
-      // 先處理螢幕空間（不依賴 muzzleOffset）
-      const cam = this.graphics?.getCamera?.();
-      const space = vm.muzzleSpace || 'local'; // 'local' | 'camera' | 'world' | 'screen'
-      if (space === 'screen' && cam) {
-        let ndc2;
-        if (Array.isArray(vm.muzzleScreenPx) && vm.muzzleScreenPx.length === 2) {
-          const w = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1;
-          const h = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 1;
-          const x = (vm.muzzleScreenPx[0] / w) * 2 - 1;           // 左-1 右+1
-          const y = - (vm.muzzleScreenPx[1] / h) * 2 + 1;         // 上+1 下-1
-          ndc2 = new THREE.Vector2(x, y);
-        } else {
-          const x = (Array.isArray(vm.muzzleScreen) && vm.muzzleScreen.length === 2) ? vm.muzzleScreen[0] : 0;
-          const y = (Array.isArray(vm.muzzleScreen) && vm.muzzleScreen.length === 2) ? vm.muzzleScreen[1] : 0;
-          ndc2 = new THREE.Vector2(x, y); // 直接使用 NDC (-1..1)
-        }
-        const rc = new THREE.Raycaster();
-        rc.setFromCamera(ndc2, cam);
-        const camOrigin = cam.getWorldPosition(new THREE.Vector3());
-        const forward = rc.ray.direction.clone().normalize();
-        const depth = (typeof vm.muzzleDepth === 'number') ? vm.muzzleDepth : Math.max(0.2, (cam.near || 0.1) * 2);
-        return camOrigin.clone().add(forward.multiplyScalar(depth));
-      }
-
-      // 若提供 muzzleOffset，依 muzzleSpace 決定套用座標空間
-      if (Array.isArray(vm.muzzleOffset) && vm.muzzleOffset.length === 3) {
-        const offset = new THREE.Vector3(vm.muzzleOffset[0], vm.muzzleOffset[1], vm.muzzleOffset[2]);
-
-        if (space === 'camera' && cam) {
-          // 相機座標：不受武器自身旋轉影響，調整更穩定，仍會跟著視角
-          const camOrigin = cam.getWorldPosition(new THREE.Vector3());
-          const offsetWorld = cam.localToWorld(offset.clone()).sub(camOrigin);
-          return camOrigin.clone().add(offsetWorld);
-        }
-        if (space === 'world' && cam) {
-          // 世界軸偏移：以世界 XYZ 偏移相機位置（不隨相機/武器旋轉）
-          const camOrigin = cam.getWorldPosition(new THREE.Vector3());
-          return camOrigin.clone().add(offset);
-        }
-
-        // 預設：武器本地座標（原行為）—會隨武器群組旋轉
-        const originWorld = group.getWorldPosition(new THREE.Vector3());
-        const offsetWorld = group.localToWorld(offset.clone()).sub(originWorld);
-        return baseWorld.clone().add(offsetWorld);
-      }
-
-      // 否則直接回傳預設槍口位置
-      return baseWorld;
-    } catch (e) {
-      return null;
-    }
   }
 
   // 融合武器/皮膚的 viewModel 設定並正規化為可直接套用於 Three.js 的數值
@@ -300,191 +190,6 @@ export default class WeaponSystem {
     const rot = (Array.isArray(vm.rotation) && vm.rotation.length === 3) ? vm.rotation : defaultRot;
 
     return { scaleVec, pos, rot };
-  }
-
-  // ===== 視圖覆寫：伺服器 API 與緩存 =====
-  _initViewModelOverrides() {
-    try {
-      const p = this._ensureOverridesLoaded();
-      if (p && typeof p.then === 'function') {
-        p.then(() => { try { this.applyCurrentViewModelTransform(); } catch {} })
-         .catch(() => {});
-      }
-    } catch {}
-  }
-
-  async _ensureOverridesLoaded(force = false) {
-    if (this._vmFetchPromise) return this._vmFetchPromise;
-    if (this._vmOverridesLoaded && !force) return;
-    this._vmFetchPromise = (async () => {
-      try {
-        const res = await fetch('/api/viewmodel-overrides', { method: 'GET' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        this._vmOverrides = (data && typeof data === 'object') ? data : {};
-        this._vmOverridesLoaded = true;
-      } catch (e) {
-        console.warn('[WeaponSystem] 載入 viewmodel overrides 失敗：', e?.message || e);
-      } finally {
-        this._vmFetchPromise = null;
-      }
-    })();
-    return this._vmFetchPromise;
-  }
-
-  // ===== 視圖覆寫：localStorage 層（每把武器/每個皮膚） =====
-  _getViewOverrideKey(weaponId, skinIndex) {
-    return `ws.vm.${weaponId}.${skinIndex}`;
-  }
-
-  _readViewOverride(weaponId, skinIndex) {
-    // 改為從伺服器緩存讀取；若未載入則觸發背景載入並回傳 null（同步路徑）
-    if (!this._vmOverridesLoaded) {
-      try { const p = this._ensureOverridesLoaded(); if (p && typeof p.then === 'function') { p.then(() => { try { this.applyCurrentViewModelTransform(); } catch {} }); } } catch {}
-    }
-    try {
-      const all = this._vmOverrides || {};
-      const byWeapon = all[weaponId] || null;
-      if (!byWeapon) return null;
-      const keyStr = String(skinIndex);
-      const ov = byWeapon[keyStr] ?? byWeapon[skinIndex] ?? null;
-      return (ov && typeof ov === 'object') ? ov : null;
-    } catch { return null; }
-  }
-
-  _writeViewOverride(weaponId, skinIndex, data) {
-    // 不再寫入 localStorage；保留方法以相容舊代碼，僅更新客戶端緩存
-    try {
-      if (!data || typeof data !== 'object') return;
-      this._vmOverrides = this._vmOverrides || {};
-      const weaponMap = this._vmOverrides[weaponId] || {};
-      weaponMap[String(skinIndex)] = { ...(weaponMap[String(skinIndex)] || {}), ...data };
-      this._vmOverrides[weaponId] = weaponMap;
-      this._vmOverridesLoaded = true;
-    } catch {}
-  }
-
-  getCurrentViewModelOverride() {
-    return this._readViewOverride(this.currentWeaponId, this.skinIndex);
-  }
-
-  async setCurrentViewModelOverride(partial) {
-    if (!partial || typeof partial !== 'object') return;
-    const allow = ['scale', 'position', 'rotation', 'muzzleOffset', 'muzzleSpace', 'muzzleScreen', 'muzzleScreenPx', 'muzzleDepth'];
-    const filtered = {};
-    allow.forEach(k => { if (k in partial) filtered[k] = partial[k]; });
-
-    try {
-      await this._ensureOverridesLoaded();
-      const res = await fetch('/api/viewmodel-overrides/set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weaponId: this.currentWeaponId, skinIndex: this.skinIndex, partial: filtered })
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json && json.overrides && typeof json.overrides === 'object') {
-        this._vmOverrides = json.overrides;
-        this._vmOverridesLoaded = true;
-      } else {
-        // 後備：更新本地緩存
-        this._writeViewOverride(this.currentWeaponId, this.skinIndex, filtered);
-      }
-    } catch (e) {
-      console.warn('[WeaponSystem] 設定 viewmodel override 失敗，改為本地緩存：', e?.message || e);
-      this._writeViewOverride(this.currentWeaponId, this.skinIndex, filtered);
-    }
-
-    // 立即應用到當前武器
-    this.applyCurrentViewModelTransform();
-  }
-
-  async clearCurrentViewModelOverride(keys) {
-    // keys 可選：若提供則清除指定鍵，否則清除此武器該皮膚的所有覆寫
-    try {
-      await this._ensureOverridesLoaded();
-      const payload = { weaponId: this.currentWeaponId, skinIndex: this.skinIndex };
-      if (Array.isArray(keys) && keys.length) payload.keys = keys;
-      const res = await fetch('/api/viewmodel-overrides/clear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json && json.overrides && typeof json.overrides === 'object') {
-        this._vmOverrides = json.overrides;
-        this._vmOverridesLoaded = true;
-      } else {
-        // 後備：本地緩存清除
-        if (this._vmOverrides && this._vmOverrides[this.currentWeaponId]) {
-          const m = { ...this._vmOverrides[this.currentWeaponId] };
-          const key = String(this.skinIndex);
-          if (Array.isArray(keys) && keys.length) {
-            const cur = { ...(m[key] || {}) };
-            keys.forEach(k => { delete cur[k]; });
-            if (Object.keys(cur).length === 0) delete m[key]; else m[key] = cur;
-          } else {
-            delete m[key];
-          }
-          if (Object.keys(m).length === 0) delete this._vmOverrides[this.currentWeaponId];
-          else this._vmOverrides[this.currentWeaponId] = m;
-        }
-      }
-    } catch (e) {
-      console.warn('[WeaponSystem] 清除 viewmodel override 失敗（以本地緩存為準）：', e?.message || e);
-      if (this._vmOverrides && this._vmOverrides[this.currentWeaponId]) {
-        const m = { ...this._vmOverrides[this.currentWeaponId] };
-        const key = String(this.skinIndex);
-        if (Array.isArray(keys) && keys.length) {
-          const cur = { ...(m[key] || {}) };
-          keys.forEach(k => { delete cur[k]; });
-          if (Object.keys(cur).length === 0) delete m[key]; else m[key] = cur;
-        } else {
-          delete m[key];
-        }
-        if (Object.keys(m).length === 0) delete this._vmOverrides[this.currentWeaponId];
-        else this._vmOverrides[this.currentWeaponId] = m;
-      }
-    }
-    this.applyCurrentViewModelTransform();
-  }
-
-  // 立即將覆寫套用到當前武器群組（不重新載入）
-  applyCurrentViewModelTransform() {
-    const w = this._weaponObject;
-    if (!w) return;
-    const { scaleVec, pos, rot } = this._getViewModelParams({ placeholder: false });
-    // 安全值限制
-    const safeScaleX = Math.max(0.001, Math.min(10, Math.abs(scaleVec.x))) * Math.sign(scaleVec.x || 1);
-    const safeScaleY = Math.max(0.001, Math.min(10, Math.abs(scaleVec.y))) * Math.sign(scaleVec.y || 1);
-    const safeScaleZ = Math.max(0.001, Math.min(10, Math.abs(scaleVec.z))) * Math.sign(scaleVec.z || 1);
-    const safePosX = Math.max(-2, Math.min(2, pos[0] || 0));
-    const safePosY = Math.max(-2, Math.min(2, pos[1] || 0));
-    const safePosZ = Math.max(-5, Math.min(0, pos[2] || 0));
-    const safeRotX = Math.max(-Math.PI, Math.min(Math.PI, rot[0] || 0));
-    const safeRotY = Math.max(-Math.PI, Math.min(Math.PI, rot[1] || 0));
-    const safeRotZ = Math.max(-Math.PI, Math.min(Math.PI, rot[2] || 0));
-    try {
-      w.scale.set(safeScaleX, safeScaleY, safeScaleZ);
-      w.position.set(safePosX, safePosY, safePosZ);
-      w.rotation.set(safeRotX, safeRotY, safeRotZ);
-      this.graphics?.getCamera?.()?.updateMatrixWorld(true);
-      w.updateMatrixWorld(true);
-      // 可開關的除錯輸出（在瀏覽器主控台輸入 `window.VM_DEBUG = true` 開啟）
-      if (typeof window !== 'undefined' && window.VM_DEBUG) {
-        try {
-          const muzzle = this._getMuzzleWorldPosition?.();
-          const muzzleArr = muzzle && muzzle.toArray ? muzzle.toArray() : null;
-          console.debug('[WeaponSystem][VM]', {
-            scale: [safeScaleX, safeScaleY, safeScaleZ],
-            position: [safePosX, safePosY, safePosZ],
-            rotation: [safeRotX, safeRotY, safeRotZ],
-            muzzle: muzzleArr,
-          });
-        } catch {}
-      }
-    } catch {}
   }
 
   reload() {
