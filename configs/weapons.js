@@ -3,25 +3,23 @@ export const WEAPONS = {
     name: 'Standard Pistol',
     type: 'pistol',
     damage: 15,
-    fireRate: 0.2, // 秒/發
+    fireRate: 0.2,
     magazineSize: 12,
-    reloadTime: 1.5, // 秒
+    reloadTime: 1.5,
     skins: [
       {
         name: 'Default',
         viewModel: {
           scale: 0.15,
-          position: [0.62, -0.54, -0.9],
-          rotation: [-0.1, Math.PI, 0.06],
-          muzzleOffset: [0.0, -0.18, -2.2]
+          position: [0.6, -0.5, -0.9],
+          rotation: [-0.1, Math.PI, 0.05],
         }
       }
     ],
     viewModel: {
       scale: 0.15,
-      position: [0.62, -0.54, -0.9],
-      rotation: [-0.1, Math.PI, 0.06],
-      muzzleOffset: [0.0, -0.18, -2.2]
+      position: [0.6, -0.5, -0.9],
+      rotation: [-0.1, Math.PI, 0.05],
     }
   },
   rifle: {
@@ -36,38 +34,31 @@ export const WEAPONS = {
         name: 'Prime Vandal (Blue)',
         viewModel: {
           scale: 0.05,
-          position: [0.58, -0.98, -1.55],
-          rotation: [-0.05, Math.PI / 2, 0.0],
-          muzzleOffset: [0.0, -0.4, -7.0]
+          position: [0.5, -0.5, -1.0],
+          rotation: [-0.05, Math.PI, 0.0],
         }
       },
       {
         name: 'Phantom',
         viewModel: {
           scale: 0.05,
-          position: [0.58, -0.98, -1.55],
-          rotation: [-0.05, Math.PI / 2, 0.0],
-          muzzleOffset: [0.0, -0.4, -7.0]
+          position: [0.5, -0.5, -1.0],
+          rotation: [-0.05, Math.PI, 0.0],
         }
       },
       {
         name: 'Gaia Vandal (Red)',
         viewModel: {
           scale: 0.08,
-          position: [0.58, -0.98, -1.55],
-          rotation: [-0.05, Math.PI / 2, 0.0],
-          muzzleOffset: [0.0, -0.4, -7.0]
+          position: [0.5, -0.5, -1.0],
+          rotation: [-0.05, Math.PI, 0.0],
         }
       }
     ],
     viewModel: {
       scale: 0.05,
-      position: [0.58, -0.98, -1.55],
-      rotation: [-0.05, Math.PI / 2, 0.0],
-      muzzleOffset: [0.0, -0.4, -7.0],
-      muzzleSpace: 'screen',
-      muzzleScreen: [0.35, -0.25],
-      muzzleDepth: 0.6
+      position: [0.5, -0.5, -1.0],
+      rotation: [-0.05, Math.PI, 0.0],
     }
   },
   knife: {
@@ -83,23 +74,23 @@ export const WEAPONS = {
         name: 'Valorant Knife',
         viewModel: {
           scale: 0.2,
-          position: [0.6, -0.42, -0.85],
-          rotation: [0.0, Math.PI, 0.0]
+          position: [0.6, -0.4, -0.8],
+          rotation: [0, Math.PI, 0],
         }
       },
       {
         name: 'Karambit',
         viewModel: {
           scale: [-0.2, 0.2, 0.2],
-          position: [0.6, -0.42, -0.85],
-          rotation: [0.0, Math.PI, 0.0]
+          position: [0.6, -0.4, -0.8],
+          rotation: [0, Math.PI, 0],
         }
       }
     ],
     viewModel: {
       scale: 0.2,
-      position: [0.6, -0.42, -0.85],
-      rotation: [0.0, Math.PI, 0.0]
+      position: [0.6, -0.4, -0.8],
+      rotation: [0, Math.PI, 0],
     }
   }
 };

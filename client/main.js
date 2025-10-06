@@ -13,307 +13,6 @@ import { WEAPONS } from '@configs/weapons.js';
 // ========== 簡易 UI 幫手 ==========
 function $(sel) { return document.querySelector(sel); }
 
-// ========== 視圖參數調節面板 ==========
-function degFromRad(r) { return (r || 0) * 180 / Math.PI; }
-function radFromDeg(d) { return (d || 0) * Math.PI / 180; }
-
-function currentWeaponSkin() {
-  const weaponId = weaponSystem?.currentWeaponId || selectedWeaponConfig.weaponId || 'pistol';
-  const skinIndex = Number.isInteger(weaponSystem?.skinIndex) ? weaponSystem.skinIndex : (selectedWeaponConfig.skinIndex || 0);
-  return { weaponId, skinIndex };
-}
-
-function mergedViewFor(weaponId, skinIndex) {
-  const cfg = WEAPONS[weaponId] || {};
-  const baseVM = cfg.viewModel || {};
-  const skinVM = (cfg.skins && cfg.skins[skinIndex] && cfg.skins[skinIndex].viewModel) ? cfg.skins[skinIndex].viewModel : {};
-  let merged = { ...baseVM, ...skinVM };
-  try {
-    // 優先從 WeaponSystem 的覆寫緩存讀取
-    if (weaponSystem) {
-      // 當前武器/皮膚可直接用公開方法
-      if (weaponSystem.currentWeaponId === weaponId && weaponSystem.skinIndex === skinIndex) {
-        const ov = weaponSystem.getCurrentViewModelOverride?.();
-        if (ov && typeof ov === 'object') merged = { ...merged, ...ov };
-      } else if (weaponSystem._vmOverridesLoaded && weaponSystem._vmOverrides) {
-        const wMap = weaponSystem._vmOverrides[weaponId];
-        const ov = wMap ? (wMap[String(skinIndex)] ?? wMap[skinIndex]) : null;
-        if (ov && typeof ov === 'object') merged = { ...merged, ...ov };
-      } else {
-        // 觸發背景載入，完成後若畫面仍可見則刷新欄位
-        const p = weaponSystem._ensureOverridesLoaded?.();
-        if (p && typeof p.then === 'function') {
-          p.then(() => {
-            const tuner = document.querySelector('#weapon-tuner-screen');
-            if (tuner && getComputedStyle(tuner).display !== 'none') populateTunerFields();
-            const pause = document.querySelector('#pause-screen');
-            if (pause && getComputedStyle(pause).display !== 'none') populateSettingsVmSliders();
-          }).catch(() => {});
-        }
-      }
-    }
-  } catch {}
-  return merged;
-}
-
-function setInputValue(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.value = (val ?? '') === '' ? '' : String(val);
-}
-
-function populateTunerFields() {
-  const { weaponId, skinIndex } = currentWeaponSkin();
-  const vm = mergedViewFor(weaponId, skinIndex) || {};
-
-  // Scale：若為 number 則填單一值，否則嘗試以陣列填 X/Y/Z
-  if (typeof vm.scale === 'number') {
-    setInputValue('vm-scale', vm.scale);
-    setInputValue('vm-scale-x', '');
-    setInputValue('vm-scale-y', '');
-    setInputValue('vm-scale-z', '');
-  } else if (Array.isArray(vm.scale) && vm.scale.length === 3) {
-    setInputValue('vm-scale', '');
-    setInputValue('vm-scale-x', vm.scale[0]);
-    setInputValue('vm-scale-y', vm.scale[1]);
-    setInputValue('vm-scale-z', vm.scale[2]);
-  } else {
-    setInputValue('vm-scale', '');
-    setInputValue('vm-scale-x', '');
-    setInputValue('vm-scale-y', '');
-    setInputValue('vm-scale-z', '');
-  }
-
-  // Position
-  const pos = Array.isArray(vm.position) && vm.position.length === 3 ? vm.position : ['', '', ''];
-  setInputValue('vm-pos-x', pos[0]);
-  setInputValue('vm-pos-y', pos[1]);
-  setInputValue('vm-pos-z', pos[2]);
-
-  // Rotation（轉為度數）
-  const rot = Array.isArray(vm.rotation) && vm.rotation.length === 3 ? vm.rotation : ['', '', ''];
-  setInputValue('vm-rot-x', rot[0] === '' ? '' : degFromRad(rot[0]).toFixed(2));
-  setInputValue('vm-rot-y', rot[1] === '' ? '' : degFromRad(rot[1]).toFixed(2));
-  setInputValue('vm-rot-z', rot[2] === '' ? '' : degFromRad(rot[2]).toFixed(2));
-
-  // Muzzle Offset
-  const muz = Array.isArray(vm.muzzleOffset) && vm.muzzleOffset.length === 3 ? vm.muzzleOffset : ['', '', ''];
-  setInputValue('vm-muz-x', muz[0]);
-  setInputValue('vm-muz-y', muz[1]);
-  setInputValue('vm-muz-z', muz[2]);
-}
-
-function parseNum(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
-
-function bindTunerUi() {
-  // 返回塗裝
-  document.getElementById('vm-back')?.addEventListener('click', () => {
-    showScreen('#weapon-skins-screen');
-  });
-
-  // 清除此皮膚覆寫（改為呼叫伺服器 API）
-  document.getElementById('vm-clear')?.addEventListener('click', async () => {
-    try {
-      if (weaponSystem?.clearCurrentViewModelOverride) {
-        await weaponSystem.clearCurrentViewModelOverride();
-      } else {
-        const { weaponId, skinIndex } = currentWeaponSkin();
-        await fetch('/api/viewmodel-overrides/clear', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weaponId, skinIndex })
-        });
-      }
-      populateTunerFields();
-      toast('已清除此皮膚的覆寫');
-    } catch (e) {
-      console.warn('[UI] 清除覆寫失敗:', e?.message || e);
-      toast('清除覆寫失敗');
-    }
-  });
-
-  // 保存並套用（改為呼叫伺服器 API）
-  document.getElementById('vm-save')?.addEventListener('click', async () => {
-    const scaleUniform = parseNum(document.getElementById('vm-scale')?.value);
-    const sx = parseNum(document.getElementById('vm-scale-x')?.value);
-    const sy = parseNum(document.getElementById('vm-scale-y')?.value);
-    const sz = parseNum(document.getElementById('vm-scale-z')?.value);
-    const px = parseNum(document.getElementById('vm-pos-x')?.value);
-    const py = parseNum(document.getElementById('vm-pos-y')?.value);
-    const pz = parseNum(document.getElementById('vm-pos-z')?.value);
-    const rx = parseNum(document.getElementById('vm-rot-x')?.value);
-    const ry = parseNum(document.getElementById('vm-rot-y')?.value);
-    const rz = parseNum(document.getElementById('vm-rot-z')?.value);
-    const mx = parseNum(document.getElementById('vm-muz-x')?.value);
-    const my = parseNum(document.getElementById('vm-muz-y')?.value);
-    const mz = parseNum(document.getElementById('vm-muz-z')?.value);
-
-    const partial = {};
-    if (Number.isFinite(scaleUniform)) partial.scale = scaleUniform;
-    else if (Number.isFinite(sx) && Number.isFinite(sy) && Number.isFinite(sz)) partial.scale = [sx, sy, sz];
-
-    if (Number.isFinite(px) && Number.isFinite(py) && Number.isFinite(pz)) partial.position = [px, py, pz];
-
-    if (Number.isFinite(rx) && Number.isFinite(ry) && Number.isFinite(rz)) partial.rotation = [radFromDeg(rx), radFromDeg(ry), radFromDeg(rz)];
-
-    if (Number.isFinite(mx) && Number.isFinite(my) && Number.isFinite(mz)) partial.muzzleOffset = [mx, my, mz];
-
-    try {
-      if (weaponSystem?.setCurrentViewModelOverride) {
-        await weaponSystem.setCurrentViewModelOverride(partial);
-      } else {
-        const { weaponId, skinIndex } = currentWeaponSkin();
-        await fetch('/api/viewmodel-overrides/set', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weaponId, skinIndex, partial })
-        });
-      }
-      toast('已保存覆寫並套用');
-    } catch (e) {
-      console.warn('[UI] 保存覆寫失敗:', e?.message || e);
-      toast('保存覆寫失敗');
-    }
-  });
-}
-
-// ========== 設定頁：武器視圖快速調整（滑桿） ==========
-function setRangeAndLabel(rangeId, labelId, value, decimals = 2) {
-  const r = document.getElementById(rangeId);
-  const lb = document.getElementById(labelId);
-  if (r) r.value = String(value);
-  if (lb && Number.isFinite(+value)) lb.textContent = (+value).toFixed(decimals);
-}
-
-async function applyVmPartial(partial) {
-  if (weaponSystem?.setCurrentViewModelOverride) {
-    try { await weaponSystem.setCurrentViewModelOverride(partial); } catch {}
-    return;
-  }
-  // Fallback：尚未初始化武器系統時，直接呼叫伺服器 API
-  const { weaponId, skinIndex } = currentWeaponSkin();
-  try {
-    await fetch('/api/viewmodel-overrides/set', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weaponId, skinIndex, partial })
-    });
-  } catch {}
-}
-
-function populateSettingsVmSliders() {
-  const { weaponId, skinIndex } = currentWeaponSkin();
-  const vm = mergedViewFor(weaponId, skinIndex) || {};
-
-  // Scale（若為陣列則取平均作為顯示值）
-  let scaleUniform = 0.15;
-  if (typeof vm.scale === 'number') scaleUniform = vm.scale;
-  else if (Array.isArray(vm.scale) && vm.scale.length === 3) {
-    const [sx, sy, sz] = vm.scale;
-    const nums = [sx, sy, sz].map(v => +v).filter(n => Number.isFinite(n));
-    if (nums.length === 3) scaleUniform = (nums[0] + nums[1] + nums[2]) / 3;
-  }
-  setRangeAndLabel('settings-vm-scale-range', 'settings-vm-scale-value', scaleUniform, 3);
-
-  // Position
-  const p = Array.isArray(vm.position) && vm.position.length === 3 ? vm.position : [0.6, -0.5, -1.0];
-  setRangeAndLabel('settings-vm-pos-x', 'settings-vm-pos-x-value', +p[0], 2);
-  setRangeAndLabel('settings-vm-pos-y', 'settings-vm-pos-y-value', +p[1], 2);
-  setRangeAndLabel('settings-vm-pos-z', 'settings-vm-pos-z-value', +p[2], 2);
-
-  // Rotation（弧度轉度）
-  const r = Array.isArray(vm.rotation) && vm.rotation.length === 3 ? vm.rotation : [radFromDeg(-5), radFromDeg(180), radFromDeg(5)];
-  setRangeAndLabel('settings-vm-rot-x', 'settings-vm-rot-x-value', degFromRad(+r[0]), 2);
-  setRangeAndLabel('settings-vm-rot-y', 'settings-vm-rot-y-value', degFromRad(+r[1]), 2);
-  setRangeAndLabel('settings-vm-rot-z', 'settings-vm-rot-z-value', degFromRad(+r[2]), 2);
-
-  // Muzzle Offset
-  const m = Array.isArray(vm.muzzleOffset) && vm.muzzleOffset.length === 3 ? vm.muzzleOffset : [0, 0, 0];
-  setRangeAndLabel('settings-vm-muz-x', 'settings-vm-muz-x-value', +m[0], 2);
-  setRangeAndLabel('settings-vm-muz-y', 'settings-vm-muz-y-value', +m[1], 2);
-  setRangeAndLabel('settings-vm-muz-z', 'settings-vm-muz-z-value', +m[2], 2);
-
-  // Screen Muzzle（NDC 與 Depth）
-  // 來源優先順序：muzzleScreen (NDC) > 由 muzzleScreenPx 轉換
-  let ndcX = 0.0, ndcY = 0.0;
-  if (Array.isArray(vm.muzzleScreen) && vm.muzzleScreen.length === 2) {
-    ndcX = Number.isFinite(+vm.muzzleScreen[0]) ? +vm.muzzleScreen[0] : 0;
-    ndcY = Number.isFinite(+vm.muzzleScreen[1]) ? +vm.muzzleScreen[1] : 0;
-  } else if (Array.isArray(vm.muzzleScreenPx) && vm.muzzleScreenPx.length === 2) {
-    const w = window.innerWidth || 1;
-    const h = window.innerHeight || 1;
-    const px = +vm.muzzleScreenPx[0];
-    const py = +vm.muzzleScreenPx[1];
-    if (Number.isFinite(px) && Number.isFinite(py)) {
-      ndcX = (px / w) * 2 - 1;
-      ndcY = 1 - (py / h) * 2; // 像素原點在左上，NDC Y 向上為正
-    }
-  }
-  const depth = Number.isFinite(+vm.muzzleDepth) ? +vm.muzzleDepth : 0.25;
-  setRangeAndLabel('settings-vm-muz-screen-x', 'settings-vm-muz-screen-x-value', ndcX, 3);
-  setRangeAndLabel('settings-vm-muz-screen-y', 'settings-vm-muz-screen-y-value', ndcY, 3);
-  setRangeAndLabel('settings-vm-muz-depth', 'settings-vm-muz-depth-value', depth, 2);
-}
-
-function bindSettingsVmSliders() {
-  // Scale
-  document.getElementById('settings-vm-scale-range')?.addEventListener('input', (e) => {
-    const v = parseFloat(e.target.value);
-    setRangeAndLabel('settings-vm-scale-range', 'settings-vm-scale-value', v, 3);
-    if (Number.isFinite(v)) applyVmPartial({ scale: v });
-  });
-
-  // Position
-  ['x', 'y', 'z'].forEach(axis => {
-    document.getElementById(`settings-vm-pos-${axis}`)?.addEventListener('input', () => {
-      const px = parseFloat(document.getElementById('settings-vm-pos-x')?.value);
-      const py = parseFloat(document.getElementById('settings-vm-pos-y')?.value);
-      const pz = parseFloat(document.getElementById('settings-vm-pos-z')?.value);
-      setRangeAndLabel(`settings-vm-pos-${axis}`, `settings-vm-pos-${axis}-value`, parseFloat(document.getElementById(`settings-vm-pos-${axis}`)?.value), 2);
-      if ([px, py, pz].every(Number.isFinite)) applyVmPartial({ position: [px, py, pz] });
-    });
-  });
-
-  // Rotation（度數 -> 弧度）
-  ['x', 'y', 'z'].forEach(axis => {
-    document.getElementById(`settings-vm-rot-${axis}`)?.addEventListener('input', () => {
-      const dx = parseFloat(document.getElementById('settings-vm-rot-x')?.value);
-      const dy = parseFloat(document.getElementById('settings-vm-rot-y')?.value);
-      const dz = parseFloat(document.getElementById('settings-vm-rot-z')?.value);
-      setRangeAndLabel(`settings-vm-rot-${axis}`, `settings-vm-rot-${axis}-value`, parseFloat(document.getElementById(`settings-vm-rot-${axis}`)?.value), 2);
-      if ([dx, dy, dz].every(Number.isFinite)) applyVmPartial({ rotation: [radFromDeg(dx), radFromDeg(dy), radFromDeg(dz)] });
-    });
-  });
-
-  // Muzzle Offset
-  ['x', 'y', 'z'].forEach(axis => {
-    document.getElementById(`settings-vm-muz-${axis}`)?.addEventListener('input', () => {
-      const mx = parseFloat(document.getElementById('settings-vm-muz-x')?.value);
-      const my = parseFloat(document.getElementById('settings-vm-muz-y')?.value);
-      const mz = parseFloat(document.getElementById('settings-vm-muz-z')?.value);
-      setRangeAndLabel(`settings-vm-muz-${axis}`, `settings-vm-muz-${axis}-value`, parseFloat(document.getElementById(`settings-vm-muz-${axis}`)?.value), 2);
-      if ([mx, my, mz].every(Number.isFinite)) applyVmPartial({ muzzleOffset: [mx, my, mz] });
-    });
-  });
-
-  // Screen Muzzle（NDC）X/Y
-  ['x', 'y'].forEach(axis => {
-    document.getElementById(`settings-vm-muz-screen-${axis}`)?.addEventListener('input', () => {
-      const sx = parseFloat(document.getElementById('settings-vm-muz-screen-x')?.value);
-      const sy = parseFloat(document.getElementById('settings-vm-muz-screen-y')?.value);
-      setRangeAndLabel(`settings-vm-muz-screen-${axis}`, `settings-vm-muz-screen-${axis}-value`, parseFloat(document.getElementById(`settings-vm-muz-screen-${axis}`)?.value), 3);
-      if ([sx, sy].every(Number.isFinite)) {
-        applyVmPartial({ muzzleSpace: 'screen', muzzleScreen: [sx, sy] });
-      }
-    });
-  });
-
-  // Screen Muzzle Depth
-  document.getElementById('settings-vm-muz-depth')?.addEventListener('input', () => {
-    const d = parseFloat(document.getElementById('settings-vm-muz-depth')?.value);
-    setRangeAndLabel('settings-vm-muz-depth', 'settings-vm-muz-depth-value', d, 2);
-    if (Number.isFinite(d)) applyVmPartial({ muzzleSpace: 'screen', muzzleDepth: d });
-  });
-}
 // ========== 開發者模式（進階控件顯示） ==========
 const DEV_MODE_KEY = 'ui.devMode';
 function readDevMode() { try { return localStorage.getItem(DEV_MODE_KEY) === '1'; } catch (_) { return false; } }
@@ -504,18 +203,20 @@ async function connectSocket(token) {
     currentRoomId = roomId;
     $('#room-id-display').textContent = roomId;
     show($('#room-info'));
-    hide(joinCreateSection);
+    hide($('#join-create-room-section'));
     setHost(host);
-    updateStartBtnAvailability();
+    // Manually trigger player update to render the initial player list
+    socket.emit('requestPlayerList', roomId);
   });
 
   socket.on('roomJoined', ({ roomId, host }) => {
     currentRoomId = roomId;
     $('#room-id-display').textContent = roomId;
     show($('#room-info'));
-    hide(joinCreateSection);
+    hide($('#join-create-room-section'));
     setHost(host);
-    updateStartBtnAvailability();
+    // Manually trigger player update
+    socket.emit('requestPlayerList', roomId);
   });
 
   socket.on('roomFull', () => {
@@ -1070,20 +771,27 @@ function updateHealth(value) {
 
 // ========== Auth Tabs 與按鈕 ==========
 function bindAuthUi() {
-  $('#login-tab')?.addEventListener('click', () => {
-    $('#login-tab').classList.add('active');
-    $('#register-tab').classList.remove('active');
-    show($('#login-form'));
-    hide($('#register-form'));
-  });
-  $('#register-tab')?.addEventListener('click', () => {
-    $('#register-tab').classList.add('active');
-    $('#login-tab').classList.remove('active');
-    show($('#register-form'));
-    hide($('#login-form'));
-  });
-  $('#register-btn')?.addEventListener('click', () => doRegister().catch(e => toast(e.message)));
-  $('#login-btn')?.addEventListener('click', () => doLogin().catch(e => toast(e.message)));
+    const loginTab = $('#login-tab');
+    const registerTab = $('#register-tab');
+    const loginForm = $('#login-form');
+    const registerForm = $('#register-form');
+
+    loginTab?.addEventListener('click', () => {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+    });
+
+    registerTab?.addEventListener('click', () => {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        registerForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+    });
+
+    $('#register-btn')?.addEventListener('click', () => doRegister().catch(e => toast(e.message)));
+    $('#login-btn')?.addEventListener('click', () => doLogin().catch(e => toast(e.message)));
 }
 
 // ========== 本地玩家移動與位置同步 ==========
@@ -1107,8 +815,6 @@ function updateLocalPlayer(dt) {
 (function bootstrap() {
   bindAuthUi();
   bindMenuUi();
-  bindTunerUi();
-  bindSettingsVmSliders();
   bindMultiplayerUi();
   bindPauseUi();
   // 綁定並套用開發者模式狀態

@@ -241,6 +241,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('requestPlayerList', (roomId) => {
+    const game = rooms[roomId];
+    if (game) {
+      io.to(roomId).emit('updatePlayers', game.players);
+    }
+  });
+
   socket.on('startGame', (roomId) => {
     const game = rooms[roomId];
     if (game) {
