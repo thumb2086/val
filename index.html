@@ -186,8 +186,14 @@
     </div>
 
     <!-- Ammo Display -->
-    <div id="ammo-display" style="display: none; position: absolute; bottom: 50px; right: 20px; color: white; font-family: 'Inter', sans-serif; font-size: 1.5rem; text-shadow: 1px 1px 2px black; z-index: 100;">
-        <span id="ammo-text">30 / 60</span>
+    <div id="ammo-display" style="display: none; position: absolute; bottom: 80px; right: 20px; color: white; font-family: 'Inter', sans-serif; font-size: 1.5rem; text-shadow: 1px 1px 2px black; z-index: 100; text-align: right;">
+        <span id="ammo-text">30 / 30</span>
+    </div>
+
+    <!-- Weapon & Skin Display -->
+    <div id="weapon-info-display" style="display: none; position: absolute; bottom: 20px; right: 20px; color: white; font-family: 'Noto Sans TC', sans-serif; font-size: 1.2rem; text-shadow: 1px 1px 2px black; z-index: 100; text-align: right;">
+        <div id="weapon-name-text" style="font-weight: 700; font-size: 1.4rem;">Vandal</div>
+        <div id="skin-name-text" style="font-size: 1rem; color: #cde;">Default</div>
     </div>
 
     <!-- Load app bundle (includes socket.io-client) -->
