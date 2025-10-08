@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WEAPONS } from '@configs/weapons.js';
+import { createClassic, createGhost, createVandal, createPhantom, createKnife } from '../models/ProceduralWeapons.js';
 
 export default class WeaponSystem {
   constructor({ network, graphics, ui, bulletSystem } = {}) {
@@ -8,7 +9,7 @@ export default class WeaponSystem {
     this.ui = ui;
     this.bullets = bulletSystem;
 
-    this.currentWeaponId = 'pistol';
+    this.currentWeaponId = 'classic';
     this.skinIndex = 0;
     this.ammoInMag = 0;
     this.isReloading = false;
@@ -109,19 +110,28 @@ export default class WeaponSystem {
     const reqId = ++this._loadRequestId;
     this._clearModel();
 
-    const weaponConf = WEAPONS[this.currentWeaponId] || {};
-    const group = new THREE.Group();
-
-    switch (weaponConf.type) {
-    case 'melee':
-      group.add(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.3), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
-      break;
-    case 'pistol':
-      group.add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.18), new THREE.MeshStandardMaterial({ color: 0x555555 })));
-      break;
-    default:
-      group.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.6), new THREE.MeshStandardMaterial({ color: 0x444444 })));
-      break;
+    let group;
+    switch (this.currentWeaponId) {
+      case 'classic':
+        group = createClassic();
+        break;
+      case 'ghost':
+        group = createGhost();
+        break;
+      case 'vandal':
+        group = createVandal();
+        break;
+      case 'phantom':
+        group = createPhantom();
+        break;
+      case 'knife':
+        group = createKnife();
+        break;
+      default:
+        console.warn(`[WeaponSystem] No model for ${this.currentWeaponId}, using fallback.`);
+        group = new THREE.Group();
+        group.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.6), new THREE.MeshStandardMaterial({ color: 0x444444 })));
+        break;
     }
 
     group.traverse(n => {

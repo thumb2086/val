@@ -1,11 +1,12 @@
 export const WEAPONS = {
-  pistol: {
-    name: 'Standard Pistol',
+  classic: {
+    name: 'Classic',
     type: 'pistol',
-    damage: 15,
-    fireRate: 0.2,
+    damage: 26, // 78 headshot at close range
+    fireRate: 0.148, // 6.75 rounds/sec
     magazineSize: 12,
-    reloadTime: 1.5,
+    reloadTime: 1.75,
+    price: 0,
     skins: [
       {
         name: 'Default',
@@ -16,22 +17,38 @@ export const WEAPONS = {
         }
       }
     ],
-    viewModel: {
-      scale: 0.15,
-      position: [0.6, -0.5, -0.9],
-      rotation: [-0.1, Math.PI, 0.05],
-    }
   },
-  rifle: {
-    name: 'Assault Rifle',
-    type: 'rifle',
-    damage: 30,
-    fireRate: 0.1,
-    magazineSize: 30,
-    reloadTime: 2.5,
+  ghost: {
+    name: 'Ghost',
+    type: 'pistol',
+    damage: 30, // 105 headshot at close range
+    fireRate: 0.148, // 6.75 rounds/sec
+    magazineSize: 15,
+    reloadTime: 1.5,
+    price: 500,
+    silenced: true,
     skins: [
       {
-        name: 'Prime Vandal (Blue)',
+        name: 'Default',
+        viewModel: {
+          scale: 0.16,
+          position: [0.6, -0.5, -0.9],
+          rotation: [-0.1, Math.PI, 0.05],
+        }
+      }
+    ],
+  },
+  vandal: {
+    name: 'Vandal',
+    type: 'rifle',
+    damage: 40, // 160 headshot, no falloff
+    fireRate: 0.102, // 9.75 rounds/sec
+    magazineSize: 25,
+    reloadTime: 2.5,
+    price: 2900,
+    skins: [
+      {
+        name: 'Default',
         viewModel: {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
@@ -39,7 +56,7 @@ export const WEAPONS = {
         }
       },
       {
-        name: 'Phantom',
+        name: 'Prime Vandal (Blue)',
         viewModel: {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
@@ -55,11 +72,26 @@ export const WEAPONS = {
         }
       }
     ],
-    viewModel: {
-      scale: 0.05,
-      position: [0.5, -0.5, -1.0],
-      rotation: [-0.05, Math.PI, 0.0],
-    }
+  },
+  phantom: {
+    name: 'Phantom',
+    type: 'rifle',
+    damage: 35, // 140 headshot at 15m, has falloff
+    fireRate: 0.09, // 11 rounds/sec
+    magazineSize: 30,
+    reloadTime: 2.5,
+    price: 2900,
+    silenced: true,
+    skins: [
+      {
+        name: 'Default',
+        viewModel: {
+          scale: 0.05,
+          position: [0.5, -0.5, -1.0],
+          rotation: [-0.05, Math.PI, 0.0],
+        }
+      }
+    ],
   },
   knife: {
     name: 'Knife',
