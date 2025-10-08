@@ -45,9 +45,9 @@ export default class MapSystem {
     if (mapKey === 'valorant_training') {
       await this._loadValorantTrainingRange(scene, options);
     } else if (mapKey === 'valorant_haven') {
-      await this._loadValorantHaven(scene, options);
+      await this._loadValorantHaven(scene);
     } else if (mapKey === 'valorant_bind') {
-      await this._loadValorantBind(scene, options);
+      await this._loadValorantBind(scene);
     } else {
       // 預設載入訓練場
       await this._loadValorantTrainingRange(scene, options);
@@ -102,9 +102,8 @@ export default class MapSystem {
   }
 
   // 特戰英豪風格的Haven地圖（三點地圖）
-  async _loadValorantHaven(scene, options) {
+  async _loadValorantHaven(scene) {
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xc8b99c, roughness: 0.7, metalness: 0.1 });
-    const accentMat = new THREE.MeshStandardMaterial({ color: 0xff4655, roughness: 0.3, metalness: 0.2 });
     const coverMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.8, metalness: 0.0 });
     
     const arenaSize = 70;
@@ -112,13 +111,12 @@ export default class MapSystem {
     const groundY = -1;
     
     // 創建Haven風格的三點布局
-    this._createHavenLayout(scene, arenaSize, wallHeight, groundY, wallMat, accentMat, coverMat);
+    this._createHavenLayout(scene, arenaSize, wallHeight, groundY, wallMat, null, coverMat);
   }
 
   // 特戰英豪風格的Bind地圖（雙點地圖）
-  async _loadValorantBind(scene, options) {
+  async _loadValorantBind(scene) {
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xa67c52, roughness: 0.8, metalness: 0.1 });
-    const accentMat = new THREE.MeshStandardMaterial({ color: 0x00d4aa, roughness: 0.3, metalness: 0.2 });
     const coverMat = new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: 0.9, metalness: 0.0 });
     
     const arenaSize = 65;
@@ -126,7 +124,7 @@ export default class MapSystem {
     const groundY = -1;
     
     // 創建Bind風格的雙點布局
-    this._createBindLayout(scene, arenaSize, wallHeight, groundY, wallMat, accentMat, coverMat);
+    this._createBindLayout(scene, arenaSize, wallHeight, groundY, wallMat, null, coverMat);
   }
 
   // 輔助方法：創建牆體
@@ -344,7 +342,9 @@ export default class MapSystem {
         mat.emissive = new THREE.Color(0x22ff88);
         mat.emissiveIntensity = 0.8;
       }
-    } catch (_) {}
+    } catch (e) {
+      console.warn('Error during target hit animation:', e.message);
+    }
 
     const baseScale = node.scale.clone();
     const start = performance.now();
@@ -362,7 +362,9 @@ export default class MapSystem {
         if (mat && original.color) mat.color.copy(original.color);
         if (mat && original.emissive) mat.emissive.copy(original.emissive);
         if (mat && typeof original.emissiveIntensity === 'number') mat.emissiveIntensity = original.emissiveIntensity;
-      } catch (_) {}
+      } catch (e) {
+        console.warn('Error during target hit animation:', e.message);
+      }
 
       // 從場景與集合移除
       scene.remove(node);
@@ -374,7 +376,9 @@ export default class MapSystem {
         node.geometry?.dispose?.();
         const mats = Array.isArray(node.material) ? node.material : [node.material];
         mats.forEach(m => m?.dispose?.());
-      } catch (_) {}
+      } catch (e) {
+        console.warn('Error during target hit animation:', e.message);
+      }
 
       // 重生於隨機位置
       const id = node.userData?.targetId ?? (this.targets.length + 1);

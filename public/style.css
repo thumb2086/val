@@ -37,9 +37,9 @@ body {
   background-color: rgba(17, 17, 17, 0.9);
   display: none; /* Hidden by default, controlled by JS */
   justify-content: center;
-  z-index: 100; /* Ensure menus are above the game canvas */
   align-items: center;
   backdrop-filter: blur(5px);
+  z-index: 1000; /* Ensure menus are on top of the canvas */
 }
 
 .menu-screen.active {
@@ -168,10 +168,11 @@ h2 {
     gap: 1rem;
 }
 
-.lobby-column h3 {
+.lobby-column h3, .lobby-column h4 {
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .lobby-column .radio-group {
@@ -183,6 +184,7 @@ h2 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    cursor: pointer;
 }
 
 .lobby-column .setting-item {
@@ -209,7 +211,6 @@ h2 {
 #player-list li:last-child {
     border-bottom: none;
 }
-
 
 /* --- In-Game HUD Styling --- */
 #health-display {
