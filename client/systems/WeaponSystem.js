@@ -2,12 +2,32 @@ import * as THREE from 'three';
 import { WEAPONS } from '@configs/weapons.js';
 import { createClassic, createGhost, createVandal, createPhantom, createKnife } from '../models/ProceduralWeapons.js';
 
+import { EffectManager } from '../graphics/EffectManager.js';
+
 export default class WeaponSystem {
-  constructor({ network, graphics, ui, bulletSystem } = {}) {
+  constructor({ network, graphics, ui, bulletSystem, materialComposer } = {}) {
     this.network = network;
     this.graphics = graphics;
     this.ui = ui;
     this.bullets = bulletSystem;
+    this.materialComposer = materialComposer;
+    
+    // 初始化特效管理器
+    if (graphics?.scene) {
+        this.effectManager = new EffectManager(graphics.scene, materialComposer);
+    }
+
+    // 初始化屬性
+    this.currentWeaponId = 'classic';
+    this.skinIndex = 0;
+    this.ammoInMag = 0;
+    this.isReloading = false;
+    this.lastShotAt = 0;
+    this._weaponObject = null;
+    this._loadRequestId = 0;
+    this.isInspecting = false;
+    this._inspectStartTime = 0;
+    this._inspectAnimationFrame = null;
 
     this.currentWeaponId = 'classic';
     this.skinIndex = 0;
@@ -59,6 +79,7 @@ export default class WeaponSystem {
 
     this.lastShotAt = performance.now();
     const weapon = WEAPONS[this.currentWeaponId];
+    const skin = weapon.skins?.[this.skinIndex];
 
     if (weapon.usesAmmo !== false) {
       this.ammoInMag--;
@@ -67,15 +88,49 @@ export default class WeaponSystem {
 
     try {
       const cam = this.graphics?.getCamera?.();
-      if (cam && this.bullets) {
+      if (cam && this.effectManager) {
         cam.updateMatrixWorld(true);
         const from = cam.getWorldPosition(new THREE.Vector3());
         const direction = cam.getWorldDirection(new THREE.Vector3());
         const to = from.clone().add(direction.multiplyScalar(1000));
-        this.bullets.spawnTracer(from, to);
+
+        // 生成槍口火焰
+        if (this._weaponObject) {
+          const muzzleFlashOptions = skin?.effects?.muzzleFlash || {
+            color: 0xffaa00,
+            size: 0.1,
+            duration: 0.05
+          };
+          this.effectManager.createMuzzleFlash(this._weaponObject, muzzleFlashOptions);
+        }
+
+        // 生成彈道軌跡
+        const bulletTrailOptions = skin?.effects?.bulletTrail || {
+            color: 0xffaa00,
+            width: 0.02,
+            duration: 0.2,
+            fadeLength: 0.5
+        };
+        this.effectManager.createBulletTrail(from, to, bulletTrailOptions);
+
+        // 檢查射線碰撞
+        const raycaster = new THREE.Raycaster(from, direction.normalize());
+        const intersects = raycaster.intersectObjects(this.graphics.scene.children, true);
+        
+        if (intersects.length > 0) {
+          const hit = intersects[0];
+          // 生成擊中特效
+          const hitEffectOptions = skin?.effects?.hitEffect || {
+            color: 0xffaa00,
+            size: 0.2,
+            duration: 0.2,
+            particleCount: 8
+          };
+          this.effectManager.createHitEffect(hit.point, hit.face.normal, hitEffectOptions);
+        }
       }
     } catch (e) {
-      console.warn('[WeaponSystem] Error spawning tracer:', e);
+      console.warn('[WeaponSystem] Error creating effects:', e);
     }
 
     this.network?.emit?.('shoot', { roomId, point: aimPoint, weaponId: this.currentWeaponId });
@@ -185,56 +240,62 @@ export default class WeaponSystem {
     if (this.isReloading || !this._weaponObject) return;
     
     if (this.isInspecting) {
-      // 如果已經在檢視中，取消動畫
       this.cancelInspect();
       return;
     }
 
+    const weapon = WEAPONS[this.currentWeaponId];
+    const skin = weapon.skins?.[this.skinIndex];
+
     this.isInspecting = true;
     this._inspectStartTime = performance.now();
-    
-    const animate = () => {
-      if (!this.isInspecting || !this._weaponObject) return;
-      
-      const elapsed = (performance.now() - this._inspectStartTime) / 1000; // 轉換為秒
-      const duration = 3.0; // 動畫總時長（秒）
-      
-      if (elapsed > duration) {
-        this.cancelInspect();
-        return;
+
+    if (skin?.animations?.inspect) {
+      // 使用皮膚定義的自定義檢視動畫
+      const animationOptions = {
+        duration: skin.animations.inspect.duration || 3.0,
+        keyframes: skin.animations.inspect.keyframes || []
+      };
+
+      this.effectManager.createInspectAnimation(this._weaponObject, animationOptions);
+
+      // 如果皮膚有呼吸發光效果
+      if (skin?.materials?.accents?.type === 'emissive') {
+        this._weaponObject.traverse(node => {
+          if (node.isMesh && node.material && node.material.emissiveIntensity !== undefined) {
+            this.effectManager.createBreathingEffect(node.material, {
+              minIntensity: 0.3,
+              maxIntensity: 1.0,
+              speed: 2.0
+            });
+          }
+        });
       }
-
-      // 使用正弦函數創建平滑的旋轉動畫
-      const rotationAmount = Math.PI * 2; // 旋轉一圈
-      const progress = elapsed / duration;
-      const angle = Math.sin(progress * Math.PI * 2) * (rotationAmount / 4);
-      
-      // 儲存原始位置和旋轉
-      const originalRotation = this._weaponObject.rotation.clone();
-      const originalPosition = this._weaponObject.position.clone();
-      
-      // 應用動畫
-      this._weaponObject.rotation.z = originalRotation.z + angle;
-      this._weaponObject.position.y = originalPosition.y + Math.sin(progress * Math.PI * 4) * 0.1;
-      
-      this._inspectAnimationFrame = requestAnimationFrame(animate);
-    };
-
-    animate();
+    } else {
+      // 使用預設檢視動畫
+      this.effectManager.createInspectAnimation(this._weaponObject, {
+        duration: 3.0,
+        rotationAmount: Math.PI * 2,
+        positionOffset: 0.1
+      });
+    }
   }
 
   cancelInspect() {
     this.isInspecting = false;
-    if (this._inspectAnimationFrame) {
-      cancelAnimationFrame(this._inspectAnimationFrame);
-      this._inspectAnimationFrame = null;
-    }
     
     // 重置武器位置
     if (this._weaponObject) {
       const { pos, rot } = this._getViewModelParams();
       this._weaponObject.position.set(...pos);
       this._weaponObject.rotation.set(...rot);
+      
+      // 重置所有發光效果
+      this._weaponObject.traverse(node => {
+        if (node.isMesh && node.material && node.material.emissiveIntensity !== undefined) {
+          node.material.emissiveIntensity = node.material.userData.originalEmissiveIntensity || 0.5;
+        }
+      });
     }
   }
 }

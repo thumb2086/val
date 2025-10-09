@@ -101,6 +101,26 @@ export const WEAPONS = {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
           rotation: [-0.05, Math.PI, 0.0],
+        },
+        materials: {
+          base: {
+            type: 'metal',
+            color: '#2a2a2a',  // 深灰色基底
+            roughness: 0.6,
+            metalness: 0.8
+          },
+          barrel: {
+            type: 'metal',
+            color: '#1a1a1a',  // 更深的槍管顏色
+            roughness: 0.4,
+            metalness: 0.9
+          },
+          details: {
+            type: 'metal',
+            color: '#3a3a3a',  // 稍亮的金屬細節
+            roughness: 0.5,
+            metalness: 0.85
+          }
         }
       },
       {
@@ -221,6 +241,26 @@ export const WEAPONS = {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
           rotation: [-0.05, Math.PI, 0.0],
+        },
+        materials: {
+          base: {
+            type: 'metal',
+            color: '#232323',  // 深灰色基底
+            roughness: 0.7,
+            metalness: 0.7
+          },
+          silencer: {
+            type: 'metal',
+            color: '#1a1a1a',  // 消音器部分
+            roughness: 0.4,
+            metalness: 0.9
+          },
+          details: {
+            type: 'metal',
+            color: '#2d2d2d',  // 細節部分
+            roughness: 0.6,
+            metalness: 0.8
+          }
         }
       }
     ],

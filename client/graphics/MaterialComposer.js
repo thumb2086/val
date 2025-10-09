@@ -1,7 +1,154 @@
 // client/graphics/MaterialComposer.js
+import * as THREE from 'three';
+
 export class MaterialComposer {
     constructor(textureGen) {
         this.textureGen = textureGen;
+        this._texLoader = new THREE.TextureLoader();
+        this._cache = new Map();
+    }
+    
+    // 生成特戰英豪風格的牆面材質
+    createValorantWallMaterial(options = {}) {
+        const {
+            baseColor = 0xd4d4d4,
+            roughness = 0.8,
+            metalness = 0.1,
+            hasStripes = false,
+            stripeColor = 0x00d4aa,
+            stripeWidth = 0.1
+        } = options;
+
+        const key = `valorant_wall_${baseColor}_${roughness}_${metalness}_${hasStripes}_${stripeColor}`;
+        if (this._cache.has(key)) return this._cache.get(key);
+
+        const material = new THREE.MeshStandardMaterial({
+            color: baseColor,
+            roughness,
+            metalness,
+            side: THREE.DoubleSide
+        });
+
+        if (hasStripes) {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // 填充基底顏色
+            ctx.fillStyle = `#${baseColor.toString(16).padStart(6, '0')}`;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // 繪製發光條紋
+            ctx.fillStyle = `#${stripeColor.toString(16).padStart(6, '0')}`;
+            const stripeHeight = Math.floor(512 * stripeWidth);
+            ctx.fillRect(0, 512 - stripeHeight, 512, stripeHeight);
+
+            material.map = new THREE.CanvasTexture(canvas);
+            material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+        }
+
+        this._cache.set(key, material);
+        return material;
+    }
+
+    // 生成傳送門特效材質
+    createPortalMaterial(options = {}) {
+        const {
+            color = 0x00d4aa,
+            pulseSpeed = 1.0,
+            baseOpacity = 0.7
+        } = options;
+
+        const material = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: baseOpacity,
+            side: THREE.DoubleSide
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        const drawPortal = (time) => {
+            ctx.clearRect(0, 0, 512, 512);
+            
+            // 繪製多重同心圓環
+            for (let i = 0; i < 3; i++) {
+                const phase = (time + i/3) % 1;
+                const radius = 512 * 0.4 * (1 + 0.2 * Math.sin(phase * Math.PI * 2));
+                const alpha = baseOpacity * (1 - phase);
+
+                ctx.strokeStyle = `rgba(0, 212, 170, ${alpha})`;
+                ctx.lineWidth = 3 + 2 * Math.sin(phase * Math.PI);
+                ctx.beginPath();
+                ctx.arc(256, 256, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        };
+
+        material.map = new THREE.CanvasTexture(canvas);
+        
+        const animate = () => {
+            const time = Date.now() * 0.001 * pulseSpeed;
+            drawPortal(time);
+            material.map.needsUpdate = true;
+            requestAnimationFrame(animate);
+        };
+        animate();
+
+        return material;
+    }
+
+    // 生成射擊特效材質
+    createMuzzleFlashMaterial(options = {}) {
+        const {
+            color = 0xffaa00,
+            intensity = 1.0
+        } = options;
+
+        return new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+    }
+
+    // 生成彈道特效材質
+    createBulletTrailMaterial(options = {}) {
+        const {
+            color = 0xffaa00,
+            fadeLength = 0.5
+        } = options;
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: new THREE.Color(color) },
+                fadeLength: { value: fadeLength }
+            },
+            vertexShader: `
+                varying float vDistance;
+                void main() {
+                    vDistance = position.y;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float fadeLength;
+                varying float vDistance;
+                void main() {
+                    float opacity = 1.0 - smoothstep(0.0, fadeLength, abs(vDistance));
+                    gl_FragColor = vec4(color, opacity);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        return material;
     }
 
     // 生成金屬材質
