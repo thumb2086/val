@@ -115,6 +115,7 @@ function leaveCurrentRoom() {
   }
   currentRoomId = null;
   clearRoomUi();
+  showScreen('#multiplayer-screen');
 }
 
 // ========== 認證相關 ==========
@@ -195,8 +196,7 @@ async function connectSocket(token, username) {
   socket.on('roomCreated', ({ roomId, host }) => {
     currentRoomId = roomId;
     $('#room-id-display').textContent = roomId;
-    show($('#room-info'));
-    hide($('#join-create-room-section'));
+    showScreen('#waiting-room-screen');
     setHost(host);
     socket.emit('requestPlayerList', roomId);
   });
@@ -204,8 +204,7 @@ async function connectSocket(token, username) {
   socket.on('roomJoined', ({ roomId, host }) => {
     currentRoomId = roomId;
     $('#room-id-display').textContent = roomId;
-    show($('#room-info'));
-    hide($('#join-create-room-section'));
+    showScreen('#waiting-room-screen');
     setHost(host);
     socket.emit('requestPlayerList', roomId);
   });

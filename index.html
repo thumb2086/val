@@ -84,28 +84,35 @@
                     <button id="create-room-btn" class="btn btn-primary">創建房間</button>
                 </div>
 
-                <!-- Right Column: Join Room / Room Info -->
+                <!-- Right Column: Join Room -->
                 <div class="lobby-column">
                     <div id="join-create-room-section">
                         <h3>加入房間</h3>
                         <input type="text" id="room-id-input" placeholder="輸入房間號碼" class="auth-input">
                         <button id="join-room-btn" class="btn btn-primary">加入房間</button>
                     </div>
-                    <div id="room-info" class="hidden">
-                        <h3>房間資訊</h3>
-                        <p><strong>房間號碼:</strong> <span id="room-id-display"></span></p>
-                        <p><strong>房主:</strong> <span id="room-host-display"></span></p>
-                        <h4 style="margin-top: 1rem;">玩家列表</h4>
-                        <ul id="player-list"></ul>
-                        <div class="multiplayer-buttons">
-                            <button id="start-game-btn" class="btn btn-primary">開始遊戲</button>
-                            <button id="switch-team-btn" class="btn btn-secondary">切換隊伍</button>
-                            <button id="leave-room-btn" class="btn btn-secondary">退出房間</button>
-                        </div>
-                    </div>
                 </div>
             </div>
             <button id="back-to-main-multiplayer" class="btn btn-secondary" style="margin-top: 2rem;">返回主選單</button>
+        </div>
+    </div>
+
+    <!-- Waiting Room Screen -->
+    <div id="waiting-room-screen" class="menu-screen">
+        <div class="menu-content">
+            <h2>等待中...</h2>
+            <div id="room-info">
+                <h3>房間資訊</h3>
+                <p><strong>房間號碼:</strong> <span id="room-id-display"></span></p>
+                <p><strong>房主:</strong> <span id="room-host-display"></span></p>
+                <h4 style="margin-top: 1rem;">玩家列表</h4>
+                <ul id="player-list"></ul>
+                <div class="multiplayer-buttons">
+                    <button id="start-game-btn" class="btn btn-primary" disabled>開始遊戲</button>
+                    <button id="switch-team-btn" class="btn btn-secondary">切換隊伍</button>
+                    <button id="leave-room-btn" class="btn btn-secondary">退出房間</button>
+                </div>
+            </div>
         </div>
     </div>
 
