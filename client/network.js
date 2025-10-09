@@ -1,6 +1,13 @@
 // client/network.js
 import { io } from 'socket.io-client';
 
+// 經濟系統事件處理
+export const EconomyEvents = {
+  MONEY_UPDATED: 'money_updated',
+  PURCHASE_REQUEST: 'purchase_request',
+  PURCHASE_RESPONSE: 'purchase_response'
+};
+
 export function connect(token) {
   // 自動檢測服務器地址
   const protocol = window.location.protocol;

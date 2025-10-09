@@ -230,6 +230,65 @@
         <div class="crosshair-line" id="crosshair-right"></div>
     </div>
 
+    <!-- Buy Menu -->
+    <div id="buy-menu" class="menu-screen">
+        <div class="menu-content" style="max-width: 1000px;">
+            <h2>購買選單</h2>
+            <div class="money-display">
+                <i class="fas fa-coins"></i>
+                <span id="money-amount">$0</span>
+            </div>
+            <div class="buy-categories">
+                <div class="buy-category">
+                    <h3>手槍</h3>
+                    <div class="weapon-grid">
+                        <div class="weapon-item" data-weapon="classic" data-price="0">
+                            <img src="images/weapons/classic.png" alt="Classic">
+                            <span class="weapon-name">Classic</span>
+                            <span class="weapon-price">Free</span>
+                        </div>
+                        <div class="weapon-item" data-weapon="ghost" data-price="500">
+                            <img src="images/weapons/ghost.png" alt="Ghost">
+                            <span class="weapon-name">Ghost</span>
+                            <span class="weapon-price">$500</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="buy-category">
+                    <h3>步槍</h3>
+                    <div class="weapon-grid">
+                        <div class="weapon-item" data-weapon="vandal" data-price="2900">
+                            <img src="images/weapons/vandal.png" alt="Vandal">
+                            <span class="weapon-name">Vandal</span>
+                            <span class="weapon-price">$2900</span>
+                        </div>
+                        <div class="weapon-item" data-weapon="phantom" data-price="2900">
+                            <img src="images/weapons/phantom.png" alt="Phantom">
+                            <span class="weapon-name">Phantom</span>
+                            <span class="weapon-price">$2900</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="buy-category">
+                    <h3>防具</h3>
+                    <div class="weapon-grid">
+                        <div class="weapon-item" data-item="light_shield" data-price="400">
+                            <i class="fas fa-shield-alt"></i>
+                            <span class="weapon-name">輕型護甲</span>
+                            <span class="weapon-price">$400</span>
+                        </div>
+                        <div class="weapon-item" data-item="heavy_shield" data-price="1000">
+                            <i class="fas fa-shield-alt"></i>
+                            <span class="weapon-name">重型護甲</span>
+                            <span class="weapon-price">$1000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="close-buy-menu" class="btn btn-secondary">關閉 (B)</button>
+        </div>
+    </div>
+
     <!-- Game Stats Overlay -->
     <div id="game-stats-overlay" style="display: none; position: absolute; top: 10px; left: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 1.2rem; text-shadow: 1px 1px 2px black; z-index: 100;">
         <div id="kill-feed"></div>

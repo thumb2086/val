@@ -423,3 +423,157 @@ h2 {
     border-top: 1px solid var(--border-color);
     margin: 1.5rem 0;
 }
+
+/* --- 購買選單樣式 --- */
+#buy-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 80%;
+    max-width: 900px;
+    max-height: 80vh;
+    display: none;
+    grid-template-columns: 200px 1fr;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+#buy-menu.active {
+    display: grid;
+}
+
+.buy-menu-categories {
+    background-color: var(--background-color);
+    padding: 1rem;
+    border-right: 1px solid var(--border-color);
+}
+
+.buy-menu-category {
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-color);
+}
+
+.buy-menu-category:hover {
+    background-color: var(--secondary-hover-color);
+}
+
+.buy-menu-category.active {
+    background-color: var(--primary-color);
+    color: #000;
+}
+
+.buy-menu-items {
+    padding: 1rem;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.buy-menu-item {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.buy-menu-item:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.buy-menu-item h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+}
+
+.buy-menu-item .price {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.buy-menu-item .stats {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+}
+
+.money-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* 購買按鈕樣式 */
+.buy-button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    background-color: var(--primary-color);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.buy-button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+.buy-button:disabled {
+    background-color: var(--text-color-muted);
+    cursor: not-allowed;
+}
+
+/* 武器圖示樣式 */
+.weapon-icon {
+    width: 100%;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 0.5rem;
+}
+
+/* 武器統計數據 */
+.weapon-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.stat-label {
+    color: var(--text-color-muted);
+    font-size: 0.8rem;
+}
+
+.stat-value {
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: bold;
+}

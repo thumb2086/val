@@ -502,7 +502,24 @@ function endMatch() {
 
 // ========== Pause（Esc） ==========
 function bindPauseUi() {
-  // Placeholder for future implementation
+  $('#resume-game')?.addEventListener('click', () => {
+    if (!inMatch) return;
+    isPaused = false;
+    hideAllScreens();
+    requestPointerLock();
+  });
+
+  $('#pause-settings')?.addEventListener('click', () => {
+    showScreen('#settings-screen');
+  });
+
+  $('#back-to-main-pause')?.addEventListener('click', () => {
+    endMatch();
+    if (currentRoomId) {
+      leaveCurrentRoom();
+    }
+    showScreen('#main-menu-screen');
+  });
 }
 
 // ========== UI Helpers ==========
@@ -641,6 +658,7 @@ function gameLoop(now) {
     requestAnimationFrame(gameLoop);
     console.log('[DEBUG] Bootstrap: Initializing weapon system...');
     weaponSystem = new WeaponSystem({ network: socket, ui, graphics, bulletSystem });
+    window.weaponSystem = weaponSystem; // 設為全域變數，供input.js使用
     weaponSystem.setWeapon(selectedWeaponConfig.weaponId, selectedWeaponConfig.skinIndex);
     updateWeaponUi(selectedWeaponConfig.weaponId, selectedWeaponConfig.skinIndex);
 

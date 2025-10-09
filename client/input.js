@@ -20,6 +20,11 @@ export function initInputSystem(sensitivity = 1.0) {
 
 function onKeyDown(event) {
   keyStates[event.code] = true;
+  
+  // 處理 F 鍵秀槍
+  if (event.code === 'KeyF' && window.weaponSystem && !event.repeat) {
+    window.weaponSystem.inspectWeapon();
+  }
 }
 
 function onKeyUp(event) {

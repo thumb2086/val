@@ -10,6 +10,15 @@ export default class Game {
       score: { teamA: 0, teamB: 0 },
       teams: {},
       players: {},
+      economy: {
+        roundStartMoney: 800,    // 回合開始時的基本金錢
+        killReward: 200,         // 擊殺獎勵
+        roundWinReward: 3000,    // 贏得回合的獎勵
+        roundLoseReward: 1900,   // 輸掉回合的獎勵
+        maxMoney: 16000,         // 最大金錢上限
+        loseBonusBase: 1900,     // 連續失敗的基礎獎勵
+        loseBonusIncrement: 500  // 每次連續失敗增加的獎勵
+      }
     };
   }
 
@@ -49,13 +58,17 @@ export default class Game {
     for (const username of this.players) {
         const team = this.gameState.teams[username];
         const spawnPoint = this._getSpawnPoint(team);
+        const previousState = this.gameState.players[username] || {};
+        
         this.gameState.players[username] = {
-            ...this.gameState.players[username], // Preserve kills and other stats
+            ...previousState, // Preserve kills and other stats
             position: spawnPoint,
             rotation: { x: 0, y: 0, z: 0 },
             health: 100,
             isAlive: true,
             team: team,
+            money: isFirstRound ? this.gameState.economy.roundStartMoney : (previousState.money || 0),
+            loseBonusCount: isFirstRound ? 0 : (previousState.loseBonusCount || 0)
         };
     }
   }
@@ -77,6 +90,12 @@ export default class Game {
       // Ensure we don't count friendly fire for score, but still mark as dead
       if (killer.team !== victim.team) {
         killer.kills = (killer.kills || 0) + 1;
+        // 添加擊殺獎勵
+        const currentMoney = killer.money || 0;
+        killer.money = Math.min(
+          currentMoney + this.gameState.economy.killReward,
+          this.gameState.economy.maxMoney
+        );
       }
       victim.isAlive = false;
       victim.health = 0;
@@ -98,6 +117,34 @@ export default class Game {
       return { died: false, health: player.health };
     }
     return { died: false, health: player ? player.health : 0 };
+  }
+
+  updateTeamEconomy(winningTeam) {
+    const { economy } = this.gameState;
+    
+    Object.entries(this.gameState.players).forEach(([username, player]) => {
+      if (!player) return;
+
+      // 獲勝隊伍獲得勝利獎勵
+      if (player.team === winningTeam) {
+        player.money = Math.min(
+          (player.money || 0) + economy.roundWinReward,
+          economy.maxMoney
+        );
+        player.loseBonusCount = 0; // 重置連敗獎勵計數
+      } 
+      // 失敗隊伍獲得失敗獎勵 + 連敗獎勵
+      else {
+        player.loseBonusCount = (player.loseBonusCount || 0) + 1;
+        const loseBonus = economy.loseBonusBase + 
+          (player.loseBonusCount - 1) * economy.loseBonusIncrement;
+        
+        player.money = Math.min(
+          (player.money || 0) + loseBonus,
+          economy.maxMoney
+        );
+      }
+    });
   }
 
   checkWinCondition() {
@@ -127,16 +174,58 @@ export default class Game {
       return null; // Round is still in progress
     }
 
-    // Check for overall game winner
-    if (score.teamA >= roundLimit) {
-      return { winner: 'teamA', type: 'game', score: score };
-    }
-    if (score.teamB >= roundLimit) {
-      return { winner: 'teamB', type: 'game', score: score };
+    // 更新經濟系統
+    if (roundWinner !== 'draw') {
+      this.updateTeamEconomy(roundWinner);
+    } else {
+      // 平局情況下，雙方都獲得失敗獎勵
+      Object.values(players).forEach(player => {
+        if (player) {
+          player.money = Math.min(
+            (player.money || 0) + this.gameState.economy.loseBonusBase,
+            this.gameState.economy.maxMoney
+          );
+        }
+      });
     }
 
-    // Return round winner info
-    return { winner: roundWinner, type: 'round', score: score };
+    // Check for overall game winner
+    if (score.teamA >= roundLimit) {
+      return { 
+        winner: 'teamA', 
+        type: 'game', 
+        score: score,
+        economy: { 
+          players: Object.fromEntries(
+            Object.entries(players).map(([name, p]) => [name, { money: p.money }])
+          )
+        }
+      };
+    }
+    if (score.teamB >= roundLimit) {
+      return { 
+        winner: 'teamB', 
+        type: 'game', 
+        score: score,
+        economy: { 
+          players: Object.fromEntries(
+            Object.entries(players).map(([name, p]) => [name, { money: p.money }])
+          )
+        }
+      };
+    }
+
+    // Return round winner info with economy state
+    return { 
+      winner: roundWinner, 
+      type: 'round', 
+      score: score,
+      economy: { 
+        players: Object.fromEntries(
+          Object.entries(players).map(([name, p]) => [name, { money: p.money }])
+        )
+      }
+    };
   }
 
   switchTeam(username) {

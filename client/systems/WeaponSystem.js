@@ -16,6 +16,9 @@ export default class WeaponSystem {
     this.lastShotAt = 0;
     this._weaponObject = null;
     this._loadRequestId = 0;
+    this.isInspecting = false;
+    this._inspectStartTime = 0;
+    this._inspectAnimationFrame = null;
   }
 
   setWeapon(weaponId, skinIndex = 0) {
@@ -175,6 +178,63 @@ export default class WeaponSystem {
     const cam = this.graphics?.getCamera?.();
     if (cam && this._weaponObject && this._weaponObject.parent !== cam) {
       cam.add(this._weaponObject);
+    }
+  }
+
+  inspectWeapon() {
+    if (this.isReloading || !this._weaponObject) return;
+    
+    if (this.isInspecting) {
+      // 如果已經在檢視中，取消動畫
+      this.cancelInspect();
+      return;
+    }
+
+    this.isInspecting = true;
+    this._inspectStartTime = performance.now();
+    
+    const animate = () => {
+      if (!this.isInspecting || !this._weaponObject) return;
+      
+      const elapsed = (performance.now() - this._inspectStartTime) / 1000; // 轉換為秒
+      const duration = 3.0; // 動畫總時長（秒）
+      
+      if (elapsed > duration) {
+        this.cancelInspect();
+        return;
+      }
+
+      // 使用正弦函數創建平滑的旋轉動畫
+      const rotationAmount = Math.PI * 2; // 旋轉一圈
+      const progress = elapsed / duration;
+      const angle = Math.sin(progress * Math.PI * 2) * (rotationAmount / 4);
+      
+      // 儲存原始位置和旋轉
+      const originalRotation = this._weaponObject.rotation.clone();
+      const originalPosition = this._weaponObject.position.clone();
+      
+      // 應用動畫
+      this._weaponObject.rotation.z = originalRotation.z + angle;
+      this._weaponObject.position.y = originalPosition.y + Math.sin(progress * Math.PI * 4) * 0.1;
+      
+      this._inspectAnimationFrame = requestAnimationFrame(animate);
+    };
+
+    animate();
+  }
+
+  cancelInspect() {
+    this.isInspecting = false;
+    if (this._inspectAnimationFrame) {
+      cancelAnimationFrame(this._inspectAnimationFrame);
+      this._inspectAnimationFrame = null;
+    }
+    
+    // 重置武器位置
+    if (this._weaponObject) {
+      const { pos, rot } = this._getViewModelParams();
+      this._weaponObject.position.set(...pos);
+      this._weaponObject.rotation.set(...rot);
     }
   }
 }
