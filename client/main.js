@@ -7,6 +7,7 @@ import PlayerController from './systems/PlayerController.js';
 import { Graphics } from './graphics.js';
 import MapSystem from './systems/MapSystem.js';
 import CrosshairSystem from './systems/CrosshairSystem.js';
+import AgentSystem from './systems/AgentSystem.js';
 import { WEAPONS } from '@configs/weapons.js';
 
 // ========== 簡易 UI 幫手 ==========
@@ -53,6 +54,7 @@ let isPaused = false;
 let playerController = null;
 let _lastSentPos = 0;
 let crosshair = null;
+let agentSystem = null;
 let currentMode = 'training';
 let myLastHealth = 100;
 
@@ -153,8 +155,8 @@ async function doLogin() {
     const { token } = await api('/api/login', { username, password });
     console.log('[DEBUG] doLogin: API call successful, received token.');
 
-    console.log('[DEBUG] doLogin: Calling showScreen("#main-menu-screen").');
-    showScreen('#main-menu-screen');
+    console.log('[DEBUG] doLogin: Calling showScreen("#agent-selection-screen").');
+    showScreen('#agent-selection-screen');
     console.log('[DEBUG] doLogin: showScreen finished. Connecting socket...');
 
     await connectSocket(token, username);
@@ -220,7 +222,7 @@ async function connectSocket(token, username) {
   socket.on('roundStart', (gameState) => {
     console.log('回合開始', gameState);
     currentMode = gameState.mode;
-    startMatch();
+    startMatch(gameState);
   });
 
   socket.on('gameEnd', ({ winner, score }) => {
@@ -324,9 +326,10 @@ function bindMultiplayerUi() {
   $('#create-room-btn')?.addEventListener('click', () => {
     if (!socket) return toast('尚未連線');
     const mode = document.querySelector('input[name="gameMode"]:checked')?.value || 'skirmish';
+    const map = $('#map-select')?.value || 'valorant_training';
     const killLimit = parseInt($('#kill-limit-input').value || '20', 10);
     const botCount = parseInt($('#bot-count-input').value || '0', 10);
-    socket.emit('createRoom', { mode, killLimit, botCount });
+    socket.emit('createRoom', { mode, map, killLimit, botCount });
   });
 
   $('#join-room-btn')?.addEventListener('click', () => {
@@ -380,6 +383,38 @@ function bindMenuUi() {
   $('#back-to-main-from-practice-settings')?.addEventListener('click', () => showScreen('#main-menu-screen'));
 }
 
+// ========== 特務選擇 ==========
+function bindAgentSelectionUi() {
+  const agentList = $('#agent-list');
+  const confirmBtn = $('#confirm-agent-selection-btn');
+
+  if (!agentList || !confirmBtn || !agentSystem) return;
+
+  // Populate agent list from AgentSystem
+  Object.entries(agentSystem.agents).forEach(([id, agent]) => {
+    const card = document.createElement('div');
+    card.className = 'agent-card';
+    card.dataset.agentId = id;
+    card.innerHTML = `<h3>${agent.name}</h3>`;
+    card.addEventListener('click', () => {
+      agentList.querySelectorAll('.agent-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      confirmBtn.disabled = false;
+    });
+    agentList.appendChild(card);
+  });
+
+  // Handle confirm button click
+  confirmBtn.addEventListener('click', () => {
+    const selectedCard = agentList.querySelector('.agent-card.selected');
+    if (selectedCard) {
+      const agentId = selectedCard.dataset.agentId;
+      agentSystem.selectAgent(agentId);
+      showScreen('#main-menu-screen');
+    }
+  });
+}
+
 // ========== 武器塗裝 ==========
 function renderWeaponSkins() {
   const container = $('#weapon-skins-list');
@@ -431,7 +466,7 @@ function renderWeaponSkins() {
 }
 
 // ========== 對戰控制 ==========
-function startMatch() {
+function startMatch(gameState = {}) {
   inMatch = true;
   isPaused = false;
   hideAllScreens();
@@ -483,7 +518,8 @@ function startMatch() {
   if (!mapSystem) {
     mapSystem = new MapSystem(graphics);
   }
-  mapSystem.load('valorant_arena', {});
+  const mapKey = gameState.map || 'valorant_training';
+  mapSystem.load(mapKey, {});
 }
 
 function endMatch() {
@@ -604,22 +640,6 @@ function gameLoop(now) {
   console.log('[DEBUG] Bootstrap: Starting application initialization...');
 
   try {
-    console.log('[DEBUG] Bootstrap: Binding auth UI...');
-    bindAuthUi();
-    console.log('[DEBUG] Bootstrap: Auth UI bound successfully.');
-
-    console.log('[DEBUG] Bootstrap: Binding menu UI...');
-    bindMenuUi();
-    console.log('[DEBUG] Bootstrap: Menu UI bound successfully.');
-
-    console.log('[DEBUG] Bootstrap: Binding multiplayer UI...');
-    bindMultiplayerUi();
-    console.log('[DEBUG] Bootstrap: Multiplayer UI bound successfully.');
-
-    console.log('[DEBUG] Bootstrap: Binding pause UI...');
-    bindPauseUi();
-    console.log('[DEBUG] Bootstrap: Pause UI bound successfully.');
-
     console.log('[DEBUG] Bootstrap: Initializing graphics...');
     graphics = new Graphics();
     graphics.init();
@@ -632,7 +652,28 @@ function gameLoop(now) {
     const initSensitivity = parseFloat(slider?.value || '1.0');
     initInputSystem(initSensitivity);
     playerController = new PlayerController(graphics.getCamera(), keyStates, mouseStates);
+    agentSystem = new AgentSystem();
     console.log('[DEBUG] Bootstrap: Subsystems initialized.');
+
+    console.log('[DEBUG] Bootstrap: Binding auth UI...');
+    bindAuthUi();
+    console.log('[DEBUG] Bootstrap: Auth UI bound successfully.');
+
+    console.log('[DEBUG] Bootstrap: Binding menu UI...');
+    bindMenuUi();
+    console.log('[DEBUG] Bootstrap: Menu UI bound successfully.');
+
+    console.log('[DEBUG] Bootstrap: Binding multiplayer UI...');
+    bindMultiplayerUi();
+    console.log('[DEBUG] Bootstrap: Multiplayer UI bound successfully.');
+
+    console.log('[DEBUG] Bootstrap: Binding agent selection UI...');
+    bindAgentSelectionUi();
+    console.log('[DEBUG] Bootstrap: Agent selection UI bound successfully.');
+
+    console.log('[DEBUG] Bootstrap: Binding pause UI...');
+    bindPauseUi();
+    console.log('[DEBUG] Bootstrap: Pause UI bound successfully.');
 
     console.log('[DEBUG] Bootstrap: Starting render loop...');
     requestAnimationFrame(gameLoop);

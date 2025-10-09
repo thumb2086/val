@@ -51,9 +51,9 @@ io.on('connection', (socket) => {
   socket.emit('me', { username: socket.username });
 
   socket.on('createRoom', (data) => {
-    const { mode = 'skirmish', roundLimit = 10 } = data;
+    const { mode = 'skirmish', map = 'valorant_training', roundLimit = 10, killLimit = 20 } = data;
     const roomId = Math.random().toString(36).substring(2, 9);
-    const game = new Game(roomId, mode, 0, roundLimit);
+    const game = new Game(roomId, mode, map, killLimit, roundLimit);
     game.addPlayer(socket.username);
     rooms[roomId] = game;
     roomHosts[roomId] = socket.username;

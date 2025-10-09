@@ -362,3 +362,42 @@ h2 {
     border-top: 1px solid var(--border-color);
     margin: 1.5rem 0;
 }
+
+/* --- Agent Selection Screen --- */
+.agent-list {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.agent-card {
+  background-color: var(--secondary-color);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+  min-width: 120px;
+}
+
+.agent-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-color);
+  box-shadow: 0 5px 15px rgba(0, 212, 170, 0.2);
+}
+
+.agent-card.selected {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+  border-color: var(--primary-hover-color);
+  font-weight: bold;
+}
+
+.agent-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}

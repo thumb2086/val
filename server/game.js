@@ -1,9 +1,10 @@
 export default class Game {
-  constructor(roomId, mode = 'skirmish', killLimit = 0, roundLimit = 10) {
+  constructor(roomId, mode = 'skirmish', map = 'valorant_training', killLimit = 0, roundLimit = 10) {
     this.roomId = roomId;
     this.players = [];
     this.gameState = {
       mode: mode,
+      map: map,
       killLimit: killLimit, // Kept for other potential modes
       roundLimit: roundLimit,
       round: 0,

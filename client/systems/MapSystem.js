@@ -50,6 +50,8 @@ export default class MapSystem {
       await this._loadValorantBind(scene);
     } else if (mapKey === 'valorant_split') {
       await this._loadValorantSplit(scene);
+    } else if (mapKey === 'valorant_ascent') {
+      await this._loadValorantAscent(scene);
     } else {
       // 預設載入訓練場
       await this._loadValorantTrainingRange(scene, options);
@@ -156,6 +158,36 @@ export default class MapSystem {
     // B site
     this._createCover(scene, 5, 2, 5, 20, groundY + 1, 20, coverMat);
     this._createCover(scene, 1, 3, 8, 25, groundY + 1.5, 15, wallMat);
+  }
+
+  // 特戰英豪風格的Ascent地圖
+  async _loadValorantAscent(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8899ac, roughness: 0.8, metalness: 0.2 });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x5c6b7a, roughness: 0.7, metalness: 0.1 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xaaddff, roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.3 });
+
+    const arenaSize = 80;
+    const wallHeight = 5;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // Outer walls
+    this._createWall(scene, 0.4, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.4, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.4, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.4, 0, wallY, arenaSize/2, wallMat);
+
+    // Central structure (Mid)
+    this._createCover(scene, 15, 2.5, 15, 0, groundY + 1.25, 0, coverMat);
+    this._createWall(scene, 1, 4, 10, 0, groundY + 2, 10, glassMat); // Mid window
+
+    // A Site
+    this._createCover(scene, 8, 2, 8, -25, groundY + 1, -20, coverMat);
+    this._createWall(scene, 12, wallHeight, 0.3, -30, wallY, -15, wallMat);
+
+    // B Site
+    this._createCover(scene, 8, 2, 8, 25, groundY + 1, 20, coverMat);
+    this._createWall(scene, 12, wallHeight, 0.3, 30, wallY, 15, wallMat);
   }
 
   // 輔助方法：創建牆體
