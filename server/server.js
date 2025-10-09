@@ -117,20 +117,19 @@ io.on('connection', (socket) => {
 
       if (result.died) {
         io.to(roomId).emit('playerDied', { username: targetUsername, killer: killerUsername });
-        const winResult = game.handleKill(killerUsername, targetUsername);
-
+        const winResult = game.checkWinCondition();
         if (winResult) {
-          if (winResult.type === 'game') {
-            io.to(roomId).emit('gameEnd', { winner: winResult.winner, score: winResult.score });
-            delete rooms[roomId];
-            delete roomHosts[roomId];
-          } else if (winResult.type === 'round') {
-            io.to(roomId).emit('roundEnd', { winner: winResult.winner, score: winResult.score });
-            setTimeout(() => {
-              game.startNewRound(false);
-              io.to(roomId).emit('roundStart', game.gameState);
-            }, 5000);
-          }
+           if (winResult.type === 'game') {
+              io.to(roomId).emit('gameEnd', { winner: winResult.winner, score: winResult.score });
+              delete rooms[roomId];
+              delete roomHosts[roomId];
+            } else if (winResult.type === 'round') {
+              io.to(roomId).emit('roundEnd', { winner: winResult.winner, score: winResult.score });
+              setTimeout(() => {
+                game.startNewRound(false);
+                io.to(roomId).emit('roundStart', game.gameState);
+              }, 5000);
+            }
         }
       }
     }
@@ -191,4 +190,5 @@ io.on('connection', (socket) => {
   socket.on('disconnect', handleDisconnect);
 });
 
-server.listen(process.env.PORT || 3000, () => console.log(`Server running on port ${process.env.PORT || 3000}`));
+const port = process.env.PORT || 3000;
+server.listen(port, () => console.log(`Server running on port ${port}`));
