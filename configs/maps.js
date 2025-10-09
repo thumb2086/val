@@ -68,4 +68,3 @@ const MAPS = {
 };
 
 export default MAPS;
-};

@@ -372,7 +372,9 @@ function bindMenuUi() {
 
   $('#start-practice-btn')?.addEventListener('click', () => {
     if (!socket) return toast('請先登入連線');
+    currentMode = 'training';
     socket.emit('startTraining');
+    startMatch();
     requestPointerLock();
   });
 
@@ -483,7 +485,8 @@ function startMatch() {
   if (!mapSystem) {
     mapSystem = new MapSystem(graphics);
   }
-  mapSystem.load('valorant_arena', {});
+  const targetCount = parseInt($('#target-count-input')?.value || '10', 10);
+  mapSystem.load(currentMode === 'training' ? 'valorant_training' : 'valorant_arena', { targetCount });
 }
 
 function endMatch() {
