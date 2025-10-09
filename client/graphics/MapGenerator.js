@@ -1,6 +1,6 @@
 // client/graphics/MapGenerator.js
-import { TextureGenerator } from './TextureGenerator';
-import { ModelGenerator } from './ModelGenerator';
+import { TextureGenerator } from './TextureGenerator.js';
+import { ModelGenerator } from './ModelGenerator.js';
 
 export class MapGenerator {
     constructor(gl) {
