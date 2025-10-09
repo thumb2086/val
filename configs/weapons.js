@@ -1,4 +1,4 @@
-import { getWeaponIconUrl } from '../client/WeaponIcons';
+import { getWeaponIconUrl } from '../client/WeaponIcons.js';
 
 export const WEAPONS = {
   spectre: {

@@ -1,6 +1,6 @@
 // client/graphics.js
 import * as THREE from 'three';
-import { ResourceManager } from './graphics/ResourceManager';
+import { ResourceManager } from './graphics/ResourceManager.js';
 
 // 簡易 Three.js 渲染骨架
 export class Graphics {
