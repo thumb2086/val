@@ -28,5 +28,11 @@ export default {
     name: '經典競技場',
     description: '基礎多人對戰場地',
     redirect: 'valorant_haven'
+  },
+  valorant_split: {
+    name: 'Split - 雙點地圖',
+    description: '模仿特戰英豪Split地圖的雙點對戰場地，具有高低差和狹窄通道',
+    sites: ['A點', 'B點'],
+    features: ['高低差', '狹窄通道', '中央控制']
   }
 };

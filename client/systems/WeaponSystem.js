@@ -26,6 +26,7 @@ export default class WeaponSystem {
 
     if (this.currentWeaponId === weaponId && this.skinIndex === skinIndex && this._weaponObject) {
       this.ui?.updateAmmo?.(this.ammoInMag, WEAPONS[weaponId].magazineSize);
+      this.ui?.updateWeapon?.(this.currentWeaponId, this.skinIndex);
       return;
     }
 
@@ -38,6 +39,7 @@ export default class WeaponSystem {
     this._loadAndAttachModel();
 
     this.ui?.updateAmmo?.(this.ammoInMag, WEAPONS[weaponId].magazineSize);
+    this.ui?.updateWeapon?.(this.currentWeaponId, this.skinIndex);
   }
 
   canFire(now = performance.now()) {

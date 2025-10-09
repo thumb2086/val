@@ -48,6 +48,8 @@ export default class MapSystem {
       await this._loadValorantHaven(scene);
     } else if (mapKey === 'valorant_bind') {
       await this._loadValorantBind(scene);
+    } else if (mapKey === 'valorant_split') {
+      await this._loadValorantSplit(scene);
     } else {
       // 預設載入訓練場
       await this._loadValorantTrainingRange(scene, options);
@@ -125,6 +127,35 @@ export default class MapSystem {
     
     // 創建Bind風格的雙點布局
     this._createBindLayout(scene, arenaSize, wallHeight, groundY, wallMat, null, coverMat);
+  }
+
+  // 特戰英豪風格的Split地圖（雙點地圖）
+  async _loadValorantSplit(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.7, metalness: 0.1 });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8, metalness: 0.0 });
+
+    const arenaSize = 80;
+    const wallHeight = 6;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // 外牆
+    this._createWall(scene, 0.3, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.3, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, arenaSize/2, wallMat);
+
+    // Central area with high ground
+    this._createCover(scene, 10, 3, 10, 0, groundY + 1.5, 0, coverMat);
+
+    // A site
+    this._createCover(scene, 5, 2, 5, -20, groundY + 1, -20, coverMat);
+    this._createCover(scene, 1, 3, 8, -25, groundY + 1.5, -15, wallMat);
+
+
+    // B site
+    this._createCover(scene, 5, 2, 5, 20, groundY + 1, 20, coverMat);
+    this._createCover(scene, 1, 3, 8, 25, groundY + 1.5, 15, wallMat);
   }
 
   // 輔助方法：創建牆體
