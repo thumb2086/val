@@ -1,6 +1,35 @@
 import { getWeaponIconUrl } from '../client/WeaponIcons';
 
 export const WEAPONS = {
+  spectre: {
+    name: 'Spectre',
+    type: 'smg',
+    damage: 22,
+    fireRate: 0.089,  // 11.25 rounds/sec
+    magazineSize: 30,
+    reloadTime: 2.25,
+    price: 1600,
+    silenced: true,
+    iconUrl: () => getWeaponIconUrl('spectre'),
+    skins: [
+      {
+        name: 'Default',
+        viewModel: {
+          scale: 0.06,
+          position: [0.5, -0.5, -0.95],
+          rotation: [-0.05, Math.PI, 0.0],
+        },
+        materials: {
+          base: {
+            type: 'metal',
+            color: '#2a2a2a',
+            roughness: 0.7,
+            metalness: 0.3
+          }
+        }
+      }
+    ]
+  },
   classic: {
     name: 'Classic',
     type: 'pistol',
@@ -17,6 +46,20 @@ export const WEAPONS = {
           scale: 0.15,
           position: [0.6, -0.5, -0.9],
           rotation: [-0.1, Math.PI, 0.05],
+        },
+        materials: {
+          base: {
+            type: 'metal',
+            color: '#1a1a1a',
+            roughness: 0.8,
+            metalness: 0.4
+          },
+          details: {
+            type: 'metal',
+            color: '#333333',
+            roughness: 0.6,
+            metalness: 0.7
+          }
         }
       }
     ],
@@ -69,11 +112,79 @@ export const WEAPONS = {
         }
       },
       {
-        name: 'Gaia Vandal (Red)',
+        name: 'Gaia Vandal',
         viewModel: {
           scale: 0.08,
           position: [0.5, -0.5, -1.0],
           rotation: [-0.05, Math.PI, 0.0],
+        },
+        materials: {
+          base: {
+            type: 'custom',
+            color: '#2d3640',  // 深藍灰色基底
+            roughness: 0.4,
+            metalness: 0.7,
+            normalScale: 1.2   // 增強凹凸感
+          },
+          vines: {
+            type: 'custom',
+            color: '#3a4654',  // 稍亮的藍灰色藤蔓
+            roughness: 0.5,
+            metalness: 0.8,
+            normalMap: 'vine_pattern'  // 藤蔓紋理
+          },
+          accents: {
+            type: 'emissive',
+            color: '#ff3333',  // 紅色點綴
+            emissiveIntensity: 0.4,
+            roughness: 0.3,
+            metalness: 0.9
+          },
+          details: {
+            type: 'metal',
+            color: '#4d5c6f',  // 金屬細節
+            roughness: 0.2,
+            metalness: 1.0
+          }
+        },
+        animations: {
+          inspect: {
+            duration: 1.2,
+            keyframes: [
+              {
+                time: 0,
+                position: [0.5, -0.5, -1.0],
+                rotation: [-0.05, Math.PI, 0.0]
+              },
+              {
+                time: 0.3,
+                position: [0.7, -0.3, -0.8],
+                rotation: [-0.2, Math.PI + 0.3, 0.1]
+              },
+              {
+                time: 0.6,
+                position: [0.6, -0.4, -0.9],
+                rotation: [-0.1, Math.PI - 0.3, -0.1]
+              },
+              {
+                time: 1.2,
+                position: [0.5, -0.5, -1.0],
+                rotation: [-0.05, Math.PI, 0.0]
+              }
+            ]
+          }
+        },
+        effects: {
+          muzzleFlash: {
+            color: '#4aff8f',
+            size: 1.2,
+            duration: 0.1
+          },
+          bulletTrail: {
+            color: '#4aff8f',
+            width: 0.05,
+            duration: 0.2
+          }
         }
       },
       {
