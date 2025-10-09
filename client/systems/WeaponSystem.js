@@ -112,6 +112,10 @@ export default class WeaponSystem {
     const reqId = ++this._loadRequestId;
     this._clearModel();
 
+    const weapon = WEAPONS[this.currentWeaponId] || {};
+    const skin = weapon.skins?.[this.skinIndex];
+    const skinName = skin?.name || 'Default';
+
     let group;
     switch (this.currentWeaponId) {
       case 'classic':
@@ -121,7 +125,7 @@ export default class WeaponSystem {
         group = createGhost();
         break;
       case 'vandal':
-        group = createVandal();
+        group = createVandal(skinName);
         break;
       case 'phantom':
         group = createPhantom();

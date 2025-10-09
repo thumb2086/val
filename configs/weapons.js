@@ -78,6 +78,14 @@ export const WEAPONS = {
           position: [0.5, -0.5, -1.0],
           rotation: [-0.05, Math.PI, 0.0],
         }
+      },
+      {
+        name: 'Reaver Vandal (Purple)',
+        viewModel: {
+          scale: 0.05,
+          position: [0.5, -0.5, -1.0],
+          rotation: [-0.05, Math.PI, 0.0],
+        }
       }
     ],
   },

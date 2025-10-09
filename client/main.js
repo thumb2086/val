@@ -1,7 +1,7 @@
 // client/main.js
 import { connect } from './network.js';
 import WeaponSystem from './systems/WeaponSystem.js';
-import BulletSystem from './systems-2/BulletSystem.js';
+import BulletSystem from './systems/BulletSystem.js';
 import { keyStates, mouseStates, initInputSystem } from './input.js';
 import PlayerController from './systems/PlayerController.js';
 import { Graphics } from './graphics.js';
