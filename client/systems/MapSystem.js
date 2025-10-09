@@ -42,17 +42,37 @@ export default class MapSystem {
     const scene = this.graphics.scene;
 
     // 根據地圖類型載入不同風格
-    if (mapKey === 'valorant_training') {
-      await this._loadValorantTrainingRange(scene, options);
-    } else if (mapKey === 'valorant_haven') {
-      await this._loadValorantHaven(scene);
-    } else if (mapKey === 'valorant_bind') {
-      await this._loadValorantBind(scene);
-    } else if (mapKey === 'valorant_split') {
-      await this._loadValorantSplit(scene);
-    } else {
-      // 預設載入訓練場
-      await this._loadValorantTrainingRange(scene, options);
+    switch(mapKey) {
+      case 'valorant_training':
+        await this._loadValorantTrainingRange(scene, options);
+        break;
+      case 'valorant_haven':
+        await this._loadValorantHaven(scene);
+        break;
+      case 'valorant_bind':
+        await this._loadValorantBind(scene);
+        break;
+      case 'valorant_split':
+        await this._loadValorantSplit(scene);
+        break;
+      case 'valorant_ascent':
+        await this._loadValorantAscent(scene);
+        break;
+      case 'valorant_icebox':
+        await this._loadValorantIcebox(scene);
+        break;
+      case 'valorant_breeze':
+        await this._loadValorantBreeze(scene);
+        break;
+      case 'valorant_pearl':
+        await this._loadValorantPearl(scene);
+        break;
+      case 'valorant_fracture':
+        await this._loadValorantFracture(scene);
+        break;
+      default:
+        console.log('[MapSystem] 未知地圖類型，載入預設訓練場');
+        await this._loadValorantTrainingRange(scene, options);
     }
 
     this.loaded = true;
@@ -491,6 +511,125 @@ export default class MapSystem {
     // A點和B點掩體
     this._createCover(scene, 3, 1.5, 1, -20, groundY + 0.75, -10, coverMat);
     this._createCover(scene, 2.5, 1.3, 1, 20, groundY + 0.65, 10, coverMat);
+  }
+
+  // Ascent地圖
+  async _loadValorantAscent(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xe0d5c0, roughness: 0.7 });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+    
+    const arenaSize = 75;
+    const wallHeight = 4;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // 外牆
+    this._createWall(scene, 0.3, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.3, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, arenaSize/2, wallMat);
+
+    // 中庭區域
+    this._createCover(scene, 15, 0.5, 15, 0, groundY + 0.25, 0, coverMat);
+    
+    // A點區域
+    this._createCover(scene, 8, 2, 8, -25, groundY + 1, -20, coverMat);
+    this._createWall(scene, 0.3, 3, 6, -20, wallY + 0.5, -17, wallMat);
+    
+    // B點區域
+    this._createCover(scene, 8, 2, 8, 25, groundY + 1, 20, coverMat);
+    this._createWall(scene, 0.3, 3, 6, 20, wallY + 0.5, 17, wallMat);
+  }
+
+  // Icebox地圖
+  async _loadValorantIcebox(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
+    
+    const arenaSize = 70;
+    const wallHeight = 5;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // 外牆
+    this._createWall(scene, 0.3, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.3, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, arenaSize/2, wallMat);
+
+    // 高台和斜坡
+    this._createCover(scene, 10, 3, 10, -20, groundY + 1.5, -15, coverMat);
+    this._createCover(scene, 15, 2, 10, 20, groundY + 1, 15, coverMat);
+  }
+
+  // Breeze地圖
+  async _loadValorantBreeze(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0xcd853f });
+    
+    const arenaSize = 80;
+    const wallHeight = 4;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // 外牆
+    this._createWall(scene, 0.3, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.3, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, arenaSize/2, wallMat);
+
+    // 開放區域
+    this._createCover(scene, 20, 0.5, 20, 0, groundY + 0.25, 0, coverMat);
+    
+    // 防守點
+    this._createCover(scene, 8, 2, 8, -30, groundY + 1, -25, coverMat);
+    this._createCover(scene, 8, 2, 8, 30, groundY + 1, 25, coverMat);
+  }
+
+  // Pearl地圖
+  async _loadValorantPearl(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4169e1 });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x1e90ff });
+    
+    const arenaSize = 70;
+    const wallHeight = 4;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // 外牆
+    this._createWall(scene, 0.3, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.3, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, arenaSize/2, wallMat);
+
+    // 多層結構
+    this._createCover(scene, 12, 1, 12, 0, groundY + 0.5, 0, coverMat);
+    this._createCover(scene, 8, 2, 8, -25, groundY + 1, -20, coverMat);
+    this._createCover(scene, 8, 2, 8, 25, groundY + 1, 20, coverMat);
+  }
+
+  // Fracture地圖
+  async _loadValorantFracture(scene) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x8b0000 });
+    
+    const arenaSize = 75;
+    const wallHeight = 4;
+    const groundY = -1;
+    const wallY = groundY + wallHeight / 2;
+
+    // 外牆
+    this._createWall(scene, 0.3, wallHeight, arenaSize, -arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, 0.3, wallHeight, arenaSize, arenaSize/2, wallY, 0, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, -arenaSize/2, wallMat);
+    this._createWall(scene, arenaSize, wallHeight, 0.3, 0, wallY, arenaSize/2, wallMat);
+
+    // 中央裂谷
+    this._createCover(scene, 5, 3, arenaSize/2, 0, groundY - 1, 0, coverMat);
+    
+    // 兩側平台
+    this._createCover(scene, 15, 1, 15, -25, groundY + 0.5, 0, coverMat);
+    this._createCover(scene, 15, 1, 15, 25, groundY + 0.5, 0, coverMat);
   }
 
   // 創建掩體

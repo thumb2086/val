@@ -356,6 +356,67 @@ h2 {
     text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
 }
 
+/* --- 角色選擇介面 --- */
+.role-selection {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.role-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.role-card {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.role-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 170, 0.2);
+}
+
+.role-card.selected {
+    background: rgba(0, 212, 170, 0.1);
+    border-color: var(--primary-color);
+}
+
+.role-card h5 {
+    color: var(--primary-color);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.role-card p {
+    color: var(--text-color-muted);
+    font-size: 0.9rem;
+    margin: 0 0 1rem 0;
+}
+
+.abilities {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ability {
+    background: rgba(0, 212, 170, 0.1);
+    color: var(--primary-color);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
 /* --- Utility Classes --- */
 .divider {
     border: none;

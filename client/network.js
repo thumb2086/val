@@ -2,15 +2,33 @@
 import { io } from 'socket.io-client';
 
 export function connect(token) {
-  const socket = io('/', {
+  // 自動檢測服務器地址
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname || 'localhost';
+  const port = window.location.port || '3000';
+  const serverUrl = `${protocol}//${hostname}:${port}`;
+
+  console.log('[Network] Connecting to server:', serverUrl);
+
+  const socket = io(serverUrl, {
     auth: { token },
-    transports: ['websocket', 'polling'], // 允許降級到 polling
-    upgrade: true,                        // 允許傳輸協議升級
-    reconnection: true,                  // 啟用自動重連
-    reconnectionAttempts: 5,            // 最多嘗試重連 5 次
-    reconnectionDelay: 1000,            // 重連延遲 1 秒
-    timeout: 20000,                     // 連接超時時間 20 秒
-    forceNew: true                      // 強制建立新連接
+    transports: ['websocket', 'polling'],
+    upgrade: true,
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    timeout: 20000,
+    forceNew: true
   });
+
+  // 監聽連接狀態
+  socket.on('connect', () => {
+    console.log('[Network] Connected to server:', serverUrl);
+  });
+
+  socket.on('connect_error', (error) => {
+    console.error('[Network] Connection error:', error.message);
+  });
+
   return socket;
 }

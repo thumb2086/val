@@ -1,7 +1,65 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
+    <meta chars                <div class="multiplayer-lobby">
+                <!-- Left Column: Create Room -->
+                <div class="lobby-column">
+                    <h3>創建房間</h3>
+                    <div class="game-mode-selection">
+                        <h4>遊戲模式</h4>
+                        <div class="radio-group">
+                            <label><input type="radio" name="gameMode" value="deathmatch" checked> 死鬥 (Deathmatch)</label>
+                            <label><input type="radio" name="gameMode" value="skirmish"> 小規模衝突 (Skirmish)</label>
+                            <label><input type="radio" name="gameMode" value="5v5"> 5v5 拆彈 (Bomb Defusal)</label>
+                        </div>
+                    </div>
+                    
+                    <!-- 角色選擇 -->
+                    <div class="role-selection">
+                        <h4>選擇特務角色</h4>
+                        <div class="role-grid">
+                            <div class="role-card" data-role="ASSAULT">
+                                <h5>突擊手</h5>
+                                <p>前排戰鬥角色</p>
+                                <div class="abilities">
+                                    <span class="ability">閃光彈</span>
+                                    <span class="ability">手榴彈</span>
+                                </div>
+                            </div>
+                            <div class="role-card" data-role="SCOUT">
+                                <h5>偵查兵</h5>
+                                <p>偵查敵人位置</p>
+                                <div class="abilities">
+                                    <span class="ability">掃描</span>
+                                    <span class="ability">追蹤</span>
+                                </div>
+                            </div>
+                            <div class="role-card" data-role="SUPPORT">
+                                <h5>支援兵</h5>
+                                <p>治療和輔助</p>
+                                <div class="abilities">
+                                    <span class="ability">治療</span>
+                                    <span class="ability">復活</span>
+                                </div>
+                            </div>
+                            <div class="role-card" data-role="SENTINEL">
+                                <h5>哨兵</h5>
+                                <p>防守與陷阱</p>
+                                <div class="abilities">
+                                    <span class="ability">陷阱</span>
+                                    <span class="ability">屏障</span>
+                                </div>
+                            </div>
+                            <div class="role-card" data-role="CONTROLLER">
+                                <h5>控場手</h5>
+                                <p>場地控制</p>
+                                <div class="abilities">
+                                    <span class="ability">煙霧</span>
+                                    <span class="ability">毒氣</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>特戰英豪原型</title>
     <link rel="stylesheet" href="/style.css">
