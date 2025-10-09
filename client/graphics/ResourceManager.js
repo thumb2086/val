@@ -1,10 +1,10 @@
 // client/graphics/ResourceManager.js
-import { TextureGenerator } from './TextureGenerator';
-import { ModelGenerator } from './ModelGenerator';
-import { MaterialComposer } from './MaterialComposer';
-import { HUDGenerator } from './HUDGenerator';
-import { MapGenerator } from './MapGenerator';
-import { ParticleGenerator } from './ParticleGenerator';
+import { TextureGenerator } from './TextureGenerator.js';
+import { ModelGenerator } from './ModelGenerator.js';
+import { MaterialComposer } from './MaterialComposer.js';
+import { HUDGenerator } from './HUDGenerator.js';
+import { MapGenerator } from './MapGenerator.js';
+import { ParticleGenerator } from './ParticleGenerator.js';
 
 export class ResourceManager {
     constructor(gl) {
