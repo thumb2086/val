@@ -84,12 +84,14 @@ io.on('connection', (socket) => {
   socket.on('startGame', (roomId) => {
     const game = rooms[roomId];
     if (game && socket.username === roomHosts[roomId]) {
-      if (game.players.length < 2) {
-        return socket.emit('error', '需要至少兩名玩家才能開始遊戲。');
-      }
       game.startNewRound(true);
       io.to(roomId).emit('roundStart', game.gameState);
     }
+  });
+
+  socket.on('startTraining', () => {
+    // 訓練模式不需要房間或遊戲邏輯，客戶端自行處理
+    console.log(`User ${socket.username} is starting training mode.`);
   });
 
   socket.on('playerUpdate', (data) => {

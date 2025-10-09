@@ -373,7 +373,6 @@ function bindMenuUi() {
   $('#start-practice-btn')?.addEventListener('click', () => {
     if (!socket) return toast('請先登入連線');
     currentMode = 'training';
-    socket.emit('startTraining');
     startMatch();
     requestPointerLock();
   });
@@ -434,9 +433,9 @@ function renderWeaponSkins() {
 
 // ========== 對戰控制 ==========
 function startMatch() {
+  hideAllScreens();
   inMatch = true;
   isPaused = false;
-  hideAllScreens();
 
   if (!weaponSystem) {
     weaponSystem = new WeaponSystem({ network: socket, ui, graphics, bulletSystem });
