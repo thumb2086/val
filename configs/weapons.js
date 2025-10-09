@@ -1,3 +1,5 @@
+import { getWeaponIconUrl } from '../client/WeaponIcons';
+
 export const WEAPONS = {
   classic: {
     name: 'Classic',
@@ -7,6 +9,7 @@ export const WEAPONS = {
     magazineSize: 12,
     reloadTime: 1.75,
     price: 0,
+    iconUrl: () => getWeaponIconUrl('classic'),
     skins: [
       {
         name: 'Default',
@@ -27,6 +30,7 @@ export const WEAPONS = {
     reloadTime: 1.5,
     price: 500,
     silenced: true,
+    iconUrl: () => getWeaponIconUrl('ghost'),
     skins: [
       {
         name: 'Default',
@@ -46,6 +50,7 @@ export const WEAPONS = {
     magazineSize: 25,
     reloadTime: 2.5,
     price: 2900,
+    iconUrl: () => getWeaponIconUrl('vandal'),
     skins: [
       {
         name: 'Default',

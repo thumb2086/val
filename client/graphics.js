@@ -1,5 +1,6 @@
 // client/graphics.js
 import * as THREE from 'three';
+import { ResourceManager } from './graphics/ResourceManager';
 
 // 簡易 Three.js 渲染骨架
 export class Graphics {
@@ -9,6 +10,7 @@ export class Graphics {
     this.scene = null;
     this.camera = null;
     this._onResize = null;
+    this.resourceManager = null;
   }
 
   init() {
@@ -49,17 +51,14 @@ export class Graphics {
     const cube = new THREE.Mesh(geo, mat);
     this.scene.add(cube);
 
-    const planeGeo = new THREE.PlaneGeometry(50, 50);
-    // 使用簡單顏色取代貼圖
-    const planeMat = new THREE.MeshStandardMaterial({
-      color: 0x444444,
-      roughness: 0.8,
-      metalness: 0.1
+    // 初始化資源管理器
+    this.resourceManager = new ResourceManager(this.renderer.getContext());
+    
+    // 加載所有遊戲資源
+    this.resourceManager.initializeResources().then(() => {
+      console.log('遊戲資源載入完成');
+      this.dispatchEvent({ type: 'resourcesReady' });
     });
-    const plane = new THREE.Mesh(planeGeo, planeMat);
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -1;
-    this.scene.add(plane);
 
     // Resize handler
     this._onResize = () => {
@@ -75,8 +74,37 @@ export class Graphics {
 
   getCamera() { return this.camera; }
 
+  getResourceManager() { return this.resourceManager; }
+
   render() {
     if (!this.initialized) return;
+    
+    // 更新粒子系統
+    if (this.resourceManager) {
+      this.resourceManager.updateParticles(1/60); // 假設 60fps
+    }
+
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // 事件系統
+  addEventListener(type, listener) {
+    if (!this._listeners) this._listeners = {};
+    if (!this._listeners[type]) this._listeners[type] = [];
+    this._listeners[type].push(listener);
+  }
+
+  removeEventListener(type, listener) {
+    if (!this._listeners) return;
+    if (!this._listeners[type]) return;
+    const index = this._listeners[type].indexOf(listener);
+    if (index !== -1) this._listeners[type].splice(index, 1);
+  }
+
+  dispatchEvent(event) {
+    if (!this._listeners) return;
+    const listeners = this._listeners[event.type];
+    if (!listeners) return;
+    listeners.forEach(listener => listener(event));
   }
 }

@@ -642,6 +642,42 @@ function gameLoop(now) {
 
     console.log('[DEBUG] Bootstrap: Initializing graphics...');
     graphics = new Graphics();
+    
+    // 等待資源載入完成
+    graphics.addEventListener('resourcesReady', () => {
+        console.log('[DEBUG] Bootstrap: Resources loaded, initializing game systems...');
+        
+        // 初始化其他系統
+        bulletSystem = new BulletSystem(graphics);
+        crosshair = new CrosshairSystem(document.getElementById('crosshair'));
+        
+        // 使用生成的準心
+        const generatedCrosshair = graphics.getResourceManager().getHUDElement('crosshair');
+        if (generatedCrosshair) {
+            document.getElementById('crosshair').style.backgroundImage = `url(${generatedCrosshair})`;
+        }
+
+        // 初始化武器系統
+        weaponSystem = new WeaponSystem({ 
+            network: socket, 
+            ui, 
+            graphics, 
+            bulletSystem,
+            resourceManager: graphics.getResourceManager()
+        });
+        window.weaponSystem = weaponSystem;
+        
+        // 設置初始武器
+        weaponSystem.setWeapon(selectedWeaponConfig.weaponId, selectedWeaponConfig.skinIndex);
+        updateWeaponUi(selectedWeaponConfig.weaponId, selectedWeaponConfig.skinIndex);
+
+        // 開始遊戲循環
+        requestAnimationFrame(gameLoop);
+        
+        // 顯示初始畫面
+        showScreen('#auth-screen');
+    });
+
     graphics.init();
     console.log('[DEBUG] Bootstrap: Graphics initialized.');
 
