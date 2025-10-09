@@ -39,7 +39,8 @@ function onMouseUp(event) {
 }
 
 function onMouseMove(event) {
-  if (document.pointerLockElement) {
+  // 只在多人對戰模式時鎖定游標
+  if (document.pointerLockElement && window.currentMode !== 'training') {
     mouseStates.movementX = event.movementX || 0;
     mouseStates.movementY = event.movementY || 0;
   }

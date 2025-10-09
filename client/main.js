@@ -537,7 +537,8 @@ function updateStartBtnAvailability(players) {
   const startGameBtn = $('#start-game-btn');
   if (startGameBtn) {
     const isHost = roomHostDisplay.textContent === myUsername;
-    startGameBtn.disabled = !isHost || players.length < 2;
+    // 移除玩家數量限制,只要是房主就可以開始遊戲
+    startGameBtn.disabled = !isHost;
   }
 }
 
