@@ -99,22 +99,27 @@ export function createGhost() {
  * Creates the Vandal rifle model
  * @returns {THREE.Group}
  */
-export function createVandal() {
+export function createVandal(skinName = 'Default') {
     const group = new THREE.Group();
 
+    // Select materials based on skin
+    const bodyMaterial = skinName === 'Reaver Vandal (Purple)'
+        ? createMaterial(0x4a0d6d)
+        : materials.body;
+
     // Receiver
-    const receiver = new THREE.Mesh(new THREE.BoxGeometry(3, 0.7, 0.5), materials.body);
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(3, 0.7, 0.5), bodyMaterial);
     receiver.position.set(0, 0, 0);
     group.add(receiver);
 
     // Barrel
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.8, 8), materials.body);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.8, 8), bodyMaterial);
     barrel.rotation.z = Math.PI / 2;
     barrel.position.set(2.4, 0.1, 0);
     group.add(barrel);
 
     // Handguard
-    const handguard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.6, 0.45), materials.body);
+    const handguard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.6, 0.45), bodyMaterial);
     handguard.position.set(1.2, 0, 0);
     group.add(handguard);
 
@@ -131,10 +136,10 @@ export function createVandal() {
     group.add(magazine);
 
     // Stock
-    const stockBar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 0.15), materials.body);
+    const stockBar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 0.15), bodyMaterial);
     stockBar.position.set(-2.2, 0.1, 0);
     group.add(stockBar);
-    const stockPad = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.4), materials.body);
+    const stockPad = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.4), bodyMaterial);
     stockPad.position.set(-2.9, -0.1, 0);
     group.add(stockPad);
 
