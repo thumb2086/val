@@ -1,4 +1,4 @@
-import { getWeaponIconUrl } from '../client/WeaponIcons.js';
+import { WeaponIconGenerator } from '../client/graphics/WeaponIconGenerator.js';
 
 export const WEAPONS = {
   spectre: {
@@ -10,14 +10,18 @@ export const WEAPONS = {
     reloadTime: 2.25,
     price: 1600,
     silenced: true,
-    iconUrl: () => getWeaponIconUrl('spectre'),
+    aimPosition: { x: 0, y: -0.3, z: -0.55 },
+    aimRotation: { x: 0, y: Math.PI, z: 0 },
+    aimFOV: 50,
+    aimTransitionTime: 0.2,
+    iconUrl: () => WeaponIconGenerator.generateSpectreIcon(),
     skins: [
       {
         name: 'Default',
         viewModel: {
           scale: 0.06,
           position: [0.5, -0.5, -0.95],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         },
         materials: {
           base: {
@@ -38,14 +42,18 @@ export const WEAPONS = {
     magazineSize: 12,
     reloadTime: 1.75,
     price: 0,
-    iconUrl: () => getWeaponIconUrl('classic'),
+    aimPosition: { x: 0, y: -0.25, z: -0.5 },
+    aimRotation: { x: 0, y: Math.PI, z: 0 },
+    aimFOV: 55,
+    aimTransitionTime: 0.15,
+    iconUrl: () => WeaponIconGenerator.generateClassicIcon(),
     skins: [
       {
         name: 'Default',
         viewModel: {
           scale: 0.15,
           position: [0.6, -0.5, -0.9],
-          rotation: [-0.1, Math.PI, 0.05],
+          rotation: [-0.1, Math.PI, 0.05]
         },
         materials: {
           base: {
@@ -73,14 +81,18 @@ export const WEAPONS = {
     reloadTime: 1.5,
     price: 500,
     silenced: true,
-    iconUrl: () => getWeaponIconUrl('ghost'),
+    aimPosition: { x: 0, y: -0.25, z: -0.5 },
+    aimRotation: { x: 0, y: Math.PI, z: 0 },
+    aimFOV: 55,
+    aimTransitionTime: 0.15,
+    iconUrl: () => WeaponIconGenerator.generateGhostIcon(),
     skins: [
       {
         name: 'Default',
         viewModel: {
           scale: 0.16,
           position: [0.6, -0.5, -0.9],
-          rotation: [-0.1, Math.PI, 0.05],
+          rotation: [-0.1, Math.PI, 0.05]
         }
       }
     ],
@@ -93,14 +105,19 @@ export const WEAPONS = {
     magazineSize: 25,
     reloadTime: 2.5,
     price: 2900,
-    iconUrl: () => getWeaponIconUrl('vandal'),
+    // 開鏡設定
+    aimPosition: { x: 0, y: -0.3, z: -0.6 },
+    aimRotation: { x: 0, y: Math.PI, z: 0 },
+    aimFOV: 40, // 開鏡時的視野角度
+    aimTransitionTime: 0.2, // 開鏡動畫時間
+    iconUrl: () => WeaponIconGenerator.generateVandalIcon(),
     skins: [
       {
         name: 'Default',
         viewModel: {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         },
         materials: {
           base: {
@@ -128,7 +145,7 @@ export const WEAPONS = {
         viewModel: {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         }
       },
       {
@@ -136,7 +153,7 @@ export const WEAPONS = {
         viewModel: {
           scale: 0.08,
           position: [0.5, -0.5, -1.0],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         },
         materials: {
           base: {
@@ -212,7 +229,7 @@ export const WEAPONS = {
         viewModel: {
           scale: 0.06,
           position: [0.5, -0.5, -1.0],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         }
       },
       {
@@ -220,7 +237,7 @@ export const WEAPONS = {
         viewModel: {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         }
       }
     ],
@@ -234,13 +251,17 @@ export const WEAPONS = {
     reloadTime: 2.5,
     price: 2900,
     silenced: true,
+    aimPosition: { x: 0, y: -0.3, z: -0.6 },
+    aimRotation: { x: 0, y: Math.PI, z: 0 },
+    aimFOV: 40,
+    aimTransitionTime: 0.2,
     skins: [
       {
         name: 'Default',
         viewModel: {
           scale: 0.05,
           position: [0.5, -0.5, -1.0],
-          rotation: [-0.05, Math.PI, 0.0],
+          rotation: [-0.05, Math.PI, 0.0]
         },
         materials: {
           base: {
@@ -279,15 +300,15 @@ export const WEAPONS = {
         viewModel: {
           scale: 0.2,
           position: [0.6, -0.4, -0.8],
-          rotation: [0, Math.PI, 0],
+          rotation: [0, Math.PI, 0]
         }
       },
       {
         name: 'Karambit',
         viewModel: {
-          scale: [-0.2, 0.2, 0.2],
+          scale: [0.2, 0.2, 0.2],
           position: [0.6, -0.4, -0.8],
-          rotation: [0, Math.PI, 0],
+          rotation: [0, Math.PI, 0]
         }
       }
     ],

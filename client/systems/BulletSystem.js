@@ -7,21 +7,25 @@ export default class BulletSystem {
     this.tracers = []; // { line, age, duration }
   }
 
-  spawnTracer(from, to, { color = 0xffee88, duration = 0.15 } = {}) {
+  spawnTracer(from, to, { color = 0xffee88, duration = 0.15, width = 0.1 } = {}) {
     if (!this.graphics?.scene) return;
-    // 生成一條簡單的線段作為彈道軌跡
-    const points = [from.clone(), to.clone()];
+    // 生成一條線段作為彈道軌跡，使用 MeshLine 來獲得更好的視覺效果
+    const points = [
+      new THREE.Vector3(from.x, from.y, from.z),
+      new THREE.Vector3(to.x, to.y, to.z)
+    ];
     const geom = new THREE.BufferGeometry().setFromPoints(points);
     const mat = new THREE.LineBasicMaterial({
       color,
       transparent: true,
       opacity: 1.0,
-      depthTest: false,
-      depthWrite: false
+      depthTest: true,
+      depthWrite: false,
+      linewidth: width
     });
     const line = new THREE.Line(geom, mat);
     line.renderOrder = 998; // 讓武器(999)在最前
-    // 避免因為一端在視錐外而被整條裁切（debug 期間開啟）
+    // 確保彈道軌跡始終可見
     line.frustumCulled = false;
     line.userData.isTracer = true; // 標記為 tracer，供射線測試時排除
     this.graphics.scene.add(line);

@@ -21,9 +21,33 @@ export function initInputSystem(sensitivity = 1.0) {
 function onKeyDown(event) {
   keyStates[event.code] = true;
   
-  // 處理 F 鍵秀槍
-  if (event.code === 'KeyF' && window.weaponSystem && !event.repeat) {
-    window.weaponSystem.inspectWeapon();
+  if (window.weaponSystem && !event.repeat) {
+    // 處理 F 鍵秀槍
+    if (event.code === 'KeyF') {
+      window.weaponSystem.inspectWeapon();
+    }
+    
+    // 武器切換快速鍵
+    const weaponKeys = {
+      Digit1: 'classic',
+      Digit2: 'ghost',
+      Digit3: 'spectre',
+      Digit4: 'vandal',
+      Digit5: 'phantom',
+      
+      // 數字鍵盤
+      Numpad1: 'classic',
+      Numpad2: 'ghost',
+      Numpad3: 'spectre',
+      Numpad4: 'vandal',
+      Numpad5: 'phantom'
+    };
+
+    if (weaponKeys[event.code]) {
+      const weaponId = weaponKeys[event.code];
+      window.weaponSystem.setWeapon(weaponId, 0);
+      console.log('[INPUT] Switching to weapon:', weaponId);
+    }
   }
 }
 

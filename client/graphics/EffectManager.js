@@ -11,35 +11,81 @@ export class EffectManager {
     // 生成槍口火焰特效
     createMuzzleFlash(weapon, options = {}) {
         const {
-            color = 0xffaa00,
-            size = 0.1,
+            color = 0xffee88,
+            size = 0.15,
             duration = 0.05
         } = options;
 
-        // 建立火焰幾何體
-        const geometry = new THREE.PlaneGeometry(size, size);
-        const material = this.materialComposer.createMuzzleFlashMaterial({ color });
+        // 建立火焰幾何體 - 使用多層次的平面來創造更豐富的視覺效果
+        const group = new THREE.Group();
         
-        const flash = new THREE.Mesh(geometry, material);
-        flash.renderOrder = 999;
-        flash.material.depthTest = false;
-        flash.material.depthWrite = false;
+        // 主要火焰
+        const mainFlash = new THREE.Mesh(
+            new THREE.PlaneGeometry(size, size),
+            this.materialComposer.createMuzzleFlashMaterial({ 
+                color: color,
+                opacity: 0.8 
+            })
+        );
+        
+        // 內部較亮的核心
+        const coreFlash = new THREE.Mesh(
+            new THREE.PlaneGeometry(size * 0.6, size * 0.6),
+            this.materialComposer.createMuzzleFlashMaterial({ 
+                color: 0xffffff,
+                opacity: 1.0 
+            })
+        );
+        
+        // 外部光暈
+        const glowFlash = new THREE.Mesh(
+            new THREE.PlaneGeometry(size * 1.5, size * 1.5),
+            this.materialComposer.createMuzzleFlashMaterial({ 
+                color: color,
+                opacity: 0.4 
+            })
+        );
+        
+        [mainFlash, coreFlash, glowFlash].forEach(flash => {
+            flash.renderOrder = 999;
+            flash.material.depthTest = false;
+            flash.material.depthWrite = false;
+            flash.material.blending = THREE.AdditiveBlending;
+            group.add(flash);
+        });
 
         // 根據武器類型調整位置
-        const offset = new THREE.Vector3(0, 0, -1);
-        weapon.localToWorld(offset);
-        flash.position.copy(offset);
+        const muzzlePosition = new THREE.Vector3();
+        const muzzleOffset = new THREE.Vector3(0, 0.05, -0.6); // 調整這些值以符合武器型態
+        weapon.localToWorld(muzzlePosition.copy(muzzleOffset));
+        group.position.copy(muzzlePosition);
 
-        this.scene.add(flash);
-        
-        // 設定自動移除
-        setTimeout(() => {
-            this.scene.remove(flash);
-            geometry.dispose();
-            material.dispose();
-        }, duration * 1000);
+        this.scene.add(group);
 
-        return flash;
+        // 設定自動移除和淡出動畫
+        const startTime = performance.now();
+        const animate = () => {
+            const elapsed = (performance.now() - startTime) / 1000;
+            if (elapsed > duration) {
+                this.scene.remove(group);
+                group.traverse(object => {
+                    if (object.geometry) object.geometry.dispose();
+                    if (object.material) object.material.dispose();
+                });
+                return;
+            }
+
+            const progress = elapsed / duration;
+            group.children.forEach(flash => {
+                flash.material.opacity *= (1 - progress);
+                flash.scale.setScalar(1 + progress * 0.5);
+            });
+
+            requestAnimationFrame(animate);
+        };
+        animate();
+
+        return group;
     }
 
     // 生成彈道軌跡
